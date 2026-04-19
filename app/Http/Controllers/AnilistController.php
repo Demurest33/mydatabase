@@ -28,8 +28,6 @@ class AnilistController extends Controller
             }
         }
 
-        Log::info($franchiseData);
-
         return view('anilist.index', compact('franchiseData', 'search'));
     }
 }

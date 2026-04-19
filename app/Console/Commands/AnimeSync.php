@@ -20,9 +20,8 @@ class AnimeSync extends Command
         $this->info("Buscando franquicia: {$search}");
 
         try {
-            $franchiseName = $search;
             $data = $anilist->getGraphData($search);
-
+            $franchiseName = $this->detectFranchiseName($data['media']);
             $neo = $neo4jService->client();
 
             $neo->run('
@@ -166,5 +165,37 @@ class AnimeSync extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function detectFranchiseName(array $media): string
+    {
+        if (empty($media)) {
+            return 'Unknown Franchise';
+        }
+
+        usort($media, function ($a, $b) {
+
+            $yearA = $a['seasonYear'] ?? 9999;
+            $yearB = $b['seasonYear'] ?? 9999;
+
+            if ($yearA !== $yearB) {
+                return $yearA <=> $yearB;
+            }
+
+            $priority = [
+                'TV' => 1,
+                'ONA' => 2,
+                'MOVIE' => 3,
+                'OVA' => 4,
+                'SPECIAL' => 5,
+            ];
+
+            $fa = $priority[$a['format'] ?? 'ZZZ'] ?? 99;
+            $fb = $priority[$b['format'] ?? 'ZZZ'] ?? 99;
+
+            return $fa <=> $fb;
+        });
+        $inputname = $this->argument('search');
+        return $media[0]['title'] ?? $inputname;
     }
 }

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'anilist' => [
+        'token' => env('ANILIST_ACCESS_TOKEN'),
+    ],
+
 ];

@@ -248,93 +248,102 @@ class AnilistService
     }
 
     public function getGraphData(string $search): array
-{
-    $franchise = $this->getFullFranchise($search);
+    {
+        $franchise = $this->getFullFranchise($search);
 
-    $items = array_merge(
-        $franchise['timeline'] ?? [],
-        $franchise['source'] ?? [],
-        $franchise['others'] ?? []
-    );
+        $items = array_merge(
+            $franchise['timeline'] ?? [],
+            $franchise['source'] ?? [],
+            $franchise['others'] ?? []
+        );
 
-    $media = [];
-    $characters = [];
-    $studios = [];
-    $genres = [];
-    $mediaRelations = [];
-    $mediaCharacters = [];
-    $mediaStudios = [];
-    $mediaGenres = [];
+        $media = [];
+        $characters = [];
+        $studios = [];
+        $genres = [];
+        $mediaRelations = [];
+        $mediaCharacters = [];
+        $mediaStudios = [];
+        $mediaGenres = [];
 
-    foreach ($items as $item) {
+        foreach ($items as $item) {
 
-        $media[$item['id']] = [
-            'id' => $item['id'],
-            'title' => $item['title']['romaji'] ?? null,
-            'native' => $item['title']['native'] ?? null,
-            'type' => $item['type'] ?? null,
-            'format' => $item['format'] ?? null,
-            'status' => $item['status'] ?? null,
-            'year' => $item['seasonYear'] ?? null,
-            'score' => $item['averageScore'] ?? null,
+            $media[$item['id']] = [
+                'id' => (int)$item['id'],
+                'tag' => $item['tag'] ?? 'main',
+                'title' => $item['title']['romaji'] ?? null,
+                'native' => $item['title']['native'] ?? null,
+                'type' => $item['type'] ?? null,
+                'format' => $item['format'] ?? null,
+                'status' => $item['status'] ?? null,
+                'description' => $item['description'] ?? null,
+                'season' => $item['season'] ?? null,
+                'year' => $item['seasonYear'] ?? null,
+                'score' => $item['averageScore'] ?? null,
+                'coverImage' => $item['coverImage']['large'] ?? null,
+                'bannerImage' => $item['bannerImage'] ?? null,
+                'start_year' => $item['startDate']['year'] ?? null,
+                'start_month' => $item['startDate']['month'] ?? null,
+                'start_day' => $item['startDate']['day'] ?? null,
+            ];
+
+            foreach ($item['genres'] ?? [] as $genre) {
+                $genres[$genre] = ['name' => $genre];
+
+                $mediaGenres[] = [
+                    'media_id' => $item['id'],
+                    'genre' => $genre
+                ];
+            }
+
+            foreach ($item['studios']['nodes'] ?? [] as $studio) {
+                $studios[$studio['id']] = [
+                    'id' => (int)$studio['id'],
+                    'name' => $studio['name']
+                ];
+
+                $mediaStudios[] = [
+                    'media_id' => $item['id'],
+                    'studio_id' => $studio['id']
+                ];
+            }
+
+            foreach ($item['characters']['edges'] ?? [] as $edge) {
+                $char = $edge['node'];
+
+                $characters[$char['id']] = [
+                    'id' => (int)$char['id'],
+                    'name' => $char['name']['full'],
+                    'image' => $char['image']['large'] ?? null
+                ];
+
+                $mediaCharacters[] = [
+                    'media_id' => $item['id'],
+                    'character_id' => $char['id'],
+                    'role' => $edge['role']
+                ];
+            }
+
+            foreach ($item['relations']['edges'] ?? [] as $edge) {
+                $node = $edge['node'];
+
+                $mediaRelations[] = [
+                    'from' => $item['id'],
+                    'to' => $node['id'],
+                    'type' => $edge['relationType']
+                ];
+            }
+        }
+
+        return [
+            'media' => array_values($media),
+            'characters' => array_values($characters),
+            'studios' => array_values($studios),
+            'genres' => array_values($genres),
+            'media_relations' => $mediaRelations,
+            'media_characters' => $mediaCharacters,
+            'media_studios' => $mediaStudios,
+            'media_genres' => $mediaGenres,
         ];
-
-        foreach ($item['genres'] ?? [] as $genre) {
-            $genres[$genre] = ['name' => $genre];
-
-            $mediaGenres[] = [
-                'media_id' => $item['id'],
-                'genre' => $genre
-            ];
-        }
-
-        foreach ($item['studios']['nodes'] ?? [] as $studio) {
-            $studios[$studio['id']] = [
-                'id' => $studio['id'],
-                'name' => $studio['name']
-            ];
-
-            $mediaStudios[] = [
-                'media_id' => $item['id'],
-                'studio_id' => $studio['id']
-            ];
-        }
-
-        foreach ($item['characters']['edges'] ?? [] as $edge) {
-            $char = $edge['node'];
-
-            $characters[$char['id']] = [
-                'id' => $char['id'],
-                'name' => $char['name']['full']
-            ];
-
-            $mediaCharacters[] = [
-                'media_id' => $item['id'],
-                'character_id' => $char['id'],
-                'role' => $edge['role']
-            ];
-        }
-
-        foreach ($item['relations']['edges'] ?? [] as $edge) {
-            $node = $edge['node'];
-
-            $mediaRelations[] = [
-                'from' => $item['id'],
-                'to' => $node['id'],
-                'type' => $edge['relationType']
-            ];
-        }
     }
-
-    return [
-        'media' => array_values($media),
-        'characters' => array_values($characters),
-        'studios' => array_values($studios),
-        'genres' => array_values($genres),
-        'media_relations' => $mediaRelations,
-        'media_characters' => $mediaCharacters,
-        'media_studios' => $mediaStudios,
-        'media_genres' => $mediaGenres,
-    ];
-}
 }

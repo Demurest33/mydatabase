@@ -130,32 +130,122 @@
 
                 <div class="asset-list">
                     @foreach($assets as $item)
-                        <a href="{{ asset('storage/assets/' . $item['asset']['filename']) }}" target="_blank" class="asset-item">
-                            <div class="asset-icon">{{ $item['asset']['type'] }}</div>
+                        @php
+                            $isUrl = isset($item['asset']['url']) && !empty($item['asset']['url']);
+                            $href = $isUrl ? $item['asset']['url'] : asset('storage/assets/' . $item['asset']['filename']);
+                        @endphp
+                        <a href="{{ $href }}" target="_blank" class="asset-item">
+                            <div class="asset-icon" style="{{ $isUrl ? 'background: #3b82f6' : '' }}">
+                                {{ $isUrl ? 'URL' : $item['asset']['type'] }}
+                            </div>
                             <div style="flex: 1">
                                 <div style="font-weight: 600; font-size: 0.9rem;">{{ $item['asset']['title'] }}</div>
-                                <div style="color: var(--text-dim); font-size: 0.7rem;">Desde {{ $item['storage']['name'] ?? 'Local' }}</div>
+                                <div style="color: var(--text-dim); font-size: 0.7rem;">
+                                    {{ $isUrl ? 'Link Externo' : 'Desde ' . ($item['storage']['name'] ?? 'Local') }}
+                                </div>
                             </div>
                         </a>
                     @endforeach
 
                     @if(empty($assets))
-                        <p style="color: var(--text-dim); text-align: center; padding: 20px;">Sin assets vinculados.</p>
+                        <p style="color: var(--text-dim); text-align: center; padding: 20px;">Sin recursos vinculados.</p>
                     @endif
                 </div>
 
                 <div class="upload-section">
-                    <h4 style="margin-bottom: 15px; font-size: 0.9rem;">Cargar Nuevo Asset</h4>
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button type="button" onclick="toggleForm('file')" id="btn-file" style="flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: white; cursor: pointer; font-size: 0.8rem; font-weight: 700;">Archivo</button>
+                        <button type="button" onclick="toggleForm('url')" id="btn-url" style="flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; font-weight: 700;">Enlace</button>
+                    </div>
+
                     <form action="{{ route('characters.assets.store', $character['id']) }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        <input type="text" name="title" placeholder="Título del archivo (opcional)">
-                        <input type="file" name="file" required>
-                        <button type="submit" class="upload-btn">Vincular a Personaje</button>
+                        <input type="text" name="title" placeholder="Título (opcional)">
+                        
+                        <div id="input-file">
+                            <input type="file" name="file">
+                        </div>
+                        
+                        <div id="input-url" style="display: none;">
+                            <input type="text" name="url" placeholder="https://ejemplo.com/recurso">
+                        </div>
+
+                        <!-- Etiquetado múltiple -->
+                        <div style="margin-top: 15px;">
+                            <label style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">Etiquetar otros personajes</label>
+                            
+                            <!-- Buscador Rápido -->
+                            <input type="text" id="char-search" placeholder="Buscar por nombre..." style="width: 100%; background: var(--glass); border: 1px solid var(--border); padding: 10px 15px; border-radius: 10px; color: white; font-size: 0.8rem; margin-bottom: 10px; outline: none; border-color: rgba(245, 158, 11, 0.3);">
+
+                            <div id="character-list-box" style="max-height: 180px; overflow-y: auto; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 10px; scrollbar-width: thin;">
+                                @foreach($allCharacters as $char)
+                                    <label style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px; cursor: pointer; font-size: 0.85rem; transition: 0.2s;" class="char-select-label" data-name="{{ strtolower($char['name']) }}">
+                                        <div style="display: flex; align-items: center; gap: 10px; width: 65%;">
+                                            <input type="checkbox" name="other_characters[]" value="{{ $char['id'] }}" style="accent-color: var(--accent);">
+                                            <img src="{{ $char['image'] ?? 'https://via.placeholder.com/30' }}" alt="" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0;">
+                                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;" title="{{ $char['name'] }}">{{ $char['name'] }}</span>
+                                        </div>
+                                        @if($char['priority'])
+                                            <span style="font-size: 0.6rem; color: var(--accent); background: rgba(245, 158, 11, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 800;">FRANQUICIA</span>
+                                        @endif
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <button type="submit" class="upload-btn">Guardar Recurso</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <style>
+        .char-select-label:hover { background: rgba(255,255,255,0.05); border-radius: 6px; }
+    </style>
+
+
+    <script>
+        // Filtrado en tiempo real de personajes
+        document.getElementById('char-search').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.char-select-label');
+            
+            items.forEach(item => {
+                const name = item.getAttribute('data-name');
+                if (name.includes(term)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        function toggleForm(type) {
+            const fileInput = document.getElementById('input-file');
+            const urlInput = document.getElementById('input-url');
+            const btnFile = document.getElementById('btn-file');
+            const btnUrl = document.getElementById('btn-url');
+
+            if (type === 'file') {
+                fileInput.style.display = 'block';
+                urlInput.style.display = 'none';
+                btnFile.style.background = 'var(--accent)';
+                btnFile.style.color = 'white';
+                btnUrl.style.background = 'transparent';
+                btnUrl.style.color = 'var(--text-dim)';
+                btnUrl.style.border = '1px solid var(--border)';
+            } else {
+                fileInput.style.display = 'none';
+                urlInput.style.display = 'block';
+                btnUrl.style.background = 'var(--accent)';
+                btnUrl.style.color = 'white';
+                btnFile.style.background = 'transparent';
+                btnFile.style.color = 'var(--text-dim)';
+                btnFile.style.border = '1px solid var(--border)';
+            }
+        }
+    </script>
 
     <a href="{{ route('characters.index') }}" style="position: fixed; bottom: 30px; left: 30px; padding: 12px 25px; background: var(--card-bg); border-radius: 30px; text-decoration: none; color: white; border: 1px solid var(--border);">← Volver al Listado</a>
 

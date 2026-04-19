@@ -81,7 +81,28 @@ class CharacterController extends Controller
             }, $record->get('assets')->toArray());
             $assets = array_filter($assets);
 
-            return view('characters.show', compact('character', 'medias', 'assets'));
+            // 2. Obtener personajes PRIORIZANDO los de la misma franquicia
+            $allCharacters = [];
+            $charQuery = '
+                MATCH (oc:Character)
+                WHERE oc.id <> $id
+                OPTIONAL MATCH path = (this:Character {id: $id})<-[:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(:Franchise)-[:HAS_ENTRY]->(:Media)-[:HAS_CHARACTER]->(oc)
+                WITH oc, CASE WHEN path IS NOT NULL THEN 1 ELSE 0 END as p
+                WITH oc, max(p) as priority
+                OPTIONAL MATCH (:Media)-[r:HAS_CHARACTER]->(oc) WHERE r.role = "MAIN"
+                WITH oc, priority, count(r) as mainCount
+                RETURN oc, priority, mainCount
+                ORDER BY priority DESC, mainCount DESC, oc.name ASC
+            ';
+            
+            $charResult = $client->run($charQuery, ['id' => (int)$id]);
+            foreach ($charResult as $rec) {
+                $charData = $rec->get('oc')->getProperties()->toArray();
+                $charData['priority'] = $rec->get('priority');
+                $allCharacters[] = $charData;
+            }
+
+            return view('characters.show', compact('character', 'medias', 'assets', 'allCharacters'));
 
         } catch (Exception $e) {
             abort(500, $e->getMessage());
@@ -91,57 +112,88 @@ class CharacterController extends Controller
     public function storeAsset(Request $request, $id)
     {
         $request->validate([
-            'file' => 'required|file|max:10240', // 10MB limit
-            'title' => 'nullable|string|max:255'
+            'file' => 'nullable|file|max:20480',
+            'url' => 'nullable|url|max:500',
+            'title' => 'nullable|string|max:255',
+            'other_characters' => 'nullable|array',
+            'other_characters.*' => 'integer'
         ]);
 
         try {
-            $file = $request->file('file');
-            $originalName = $file->getClientOriginalName();
-            $mimeType = $file->getMimeType();
-            $extension = $file->getClientOriginalExtension();
-            $filename = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
-            
-            $file->storeAs('assets', $filename, 'public');
-            
-            $assetId = Str::uuid()->toString();
-            $title = $request->input('title') ?: pathinfo($originalName, PATHINFO_FILENAME);
-
             $client = $this->neo4j->client();
+            $assetId = Str::uuid()->toString();
+            $title = $request->input('title');
+            
+            $filename = null;
+            $url = $request->input('url');
+            $type = 'URL';
+            $mimeType = 'text/html';
 
-            // Crear Nodo Asset y relacionarlo
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $originalName = $file->getClientOriginalName();
+                $mimeType = $file->getMimeType();
+                $extension = $file->getClientOriginalExtension();
+                $filename = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+                
+                $file->storeAs('assets', $filename, 'public');
+                $type = strtoupper($extension);
+                if (!$title) $title = pathinfo($originalName, PATHINFO_FILENAME);
+            } else if ($url) {
+                if (!$title) $title = parse_url($url, PHP_URL_HOST) ?: 'Enlace Externo';
+            } else {
+                return back()->with('error', 'Debes proporcionar un archivo o una URL válida.');
+            }
+
+            // Preparar lista de IDs de personajes (el actual + los extras, casteados a entero rigurosamente)
+            $otherCharacters = $request->input('other_characters', []);
+            if (!is_array($otherCharacters)) $otherCharacters = [];
+            
+            $characterIds = array_values(array_unique(array_map('intval', array_merge([$id], $otherCharacters))));
+
+            // Crear Nodo Asset y relacionarlo con TODOS los personajes
             $query = '
-                MATCH (c:Character {id: $charId})
-                MERGE (st:Storage {id: "local_storage"})
-                ON CREATE SET st.name = "Local Server", st.type = "LOCAL", st.basePath = "/storage/assets", st.driver = "local"
+                MERGE (st:Storage {id: $storageId})
+                ON CREATE SET st.name = $storageName, st.type = $storageType, st.basePath = $basePath, st.driver = $driver
                 
                 CREATE (a:Asset {
                     id: $assetId,
                     title: $title,
                     filename: $filename,
+                    url: $url,
                     mimeType: $mimeType,
                     type: $type,
                     createdAt: datetime(),
                     visibility: "public"
                 })
-                CREATE (c)-[:HAS_ASSET]->(a)
                 CREATE (a)-[:STORED_IN]->(st)
-                RETURN a
+                
+                WITH a, $characterIds as listIds
+                UNWIND listIds as charId
+                MATCH (c:Character {id: charId})
+                CREATE (c)-[:HAS_ASSET]->(a)
+                RETURN count(c)
             ';
 
             $client->run($query, [
-                'charId' => (int)$id,
+                'characterIds' => $characterIds,
                 'assetId' => $assetId,
                 'title' => $title,
                 'filename' => $filename,
+                'url' => $url,
                 'mimeType' => $mimeType,
-                'type' => strtoupper($extension)
+                'type' => $type,
+                'storageId' => $filename ? "local_storage" : "web_storage",
+                'storageName' => $filename ? "Local Server" : "External Web",
+                'storageType' => $filename ? "LOCAL" : "REMOTE",
+                'basePath' => $filename ? "/storage/assets" : "",
+                'driver' => $filename ? "local" : "url"
             ]);
 
-            return back()->with('success', 'Asset cargado correctamente');
+            return back()->with('success', 'Recurso guardado y vinculado a ' . count($characterIds) . ' personajes.');
 
         } catch (Exception $e) {
-            return back()->with('error', 'Error al cargar asset: ' . $e->getMessage());
+            return back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
 }

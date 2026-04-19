@@ -39,4 +39,10 @@ return [
         'token' => env('ANILIST_ACCESS_TOKEN'),
     ],
 
+    'neo4j' => [
+        'uri' => env('NEO4J_URI'),
+        'user' => env('NEO4J_USER'),
+        'password' => env('NEO4J_PASSWORD'),
+    ],
+
 ];

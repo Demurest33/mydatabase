@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AnilistService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AnilistController extends Controller
 {
@@ -26,6 +27,8 @@ class AnilistController extends Controller
                 // Silently fail or log error
             }
         }
+
+        Log::info($franchiseData);
 
         return view('anilist.index', compact('franchiseData', 'search'));
     }

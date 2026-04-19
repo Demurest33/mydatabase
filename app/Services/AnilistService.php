@@ -44,6 +44,13 @@ class AnilistService
                 description
                 format type status source averageScore season seasonYear
                 genres
+                studios(isMain: true) { nodes { id name } }
+                characters(page: 1, perPage: 30, sort: [ROLE, ID]) {
+                    edges {
+                        role
+                        node { id name { full } image { large } }
+                    }
+                }
                 coverImage { large extraLarge }
                 bannerImage
                 startDate { year month day }
@@ -81,6 +88,13 @@ class AnilistService
                     description
                     format type status source averageScore season seasonYear
                     genres
+                    studios(isMain: true) { nodes { id name } }
+                    characters(page: 1, perPage: 30, sort: [ROLE, ID]) {
+                        edges {
+                            role
+                            node { id name { full } image { large } }
+                        }
+                    }
                     coverImage { large extraLarge }
                     bannerImage
                     startDate { year month day }
@@ -232,4 +246,95 @@ class AnilistService
         $d2_day = $d2['day'] ?? 31;
         return $d1_day <=> $d2_day;
     }
+
+    public function getGraphData(string $search): array
+{
+    $franchise = $this->getFullFranchise($search);
+
+    $items = array_merge(
+        $franchise['timeline'] ?? [],
+        $franchise['source'] ?? [],
+        $franchise['others'] ?? []
+    );
+
+    $media = [];
+    $characters = [];
+    $studios = [];
+    $genres = [];
+    $mediaRelations = [];
+    $mediaCharacters = [];
+    $mediaStudios = [];
+    $mediaGenres = [];
+
+    foreach ($items as $item) {
+
+        $media[$item['id']] = [
+            'id' => $item['id'],
+            'title' => $item['title']['romaji'] ?? null,
+            'native' => $item['title']['native'] ?? null,
+            'type' => $item['type'] ?? null,
+            'format' => $item['format'] ?? null,
+            'status' => $item['status'] ?? null,
+            'year' => $item['seasonYear'] ?? null,
+            'score' => $item['averageScore'] ?? null,
+        ];
+
+        foreach ($item['genres'] ?? [] as $genre) {
+            $genres[$genre] = ['name' => $genre];
+
+            $mediaGenres[] = [
+                'media_id' => $item['id'],
+                'genre' => $genre
+            ];
+        }
+
+        foreach ($item['studios']['nodes'] ?? [] as $studio) {
+            $studios[$studio['id']] = [
+                'id' => $studio['id'],
+                'name' => $studio['name']
+            ];
+
+            $mediaStudios[] = [
+                'media_id' => $item['id'],
+                'studio_id' => $studio['id']
+            ];
+        }
+
+        foreach ($item['characters']['edges'] ?? [] as $edge) {
+            $char = $edge['node'];
+
+            $characters[$char['id']] = [
+                'id' => $char['id'],
+                'name' => $char['name']['full']
+            ];
+
+            $mediaCharacters[] = [
+                'media_id' => $item['id'],
+                'character_id' => $char['id'],
+                'role' => $edge['role']
+            ];
+        }
+
+        foreach ($item['relations']['edges'] ?? [] as $edge) {
+            $node = $edge['node'];
+
+            $mediaRelations[] = [
+                'from' => $item['id'],
+                'to' => $node['id'],
+                'type' => $edge['relationType']
+            ];
+        }
+    }
+
+    return [
+        'media' => array_values($media),
+        'characters' => array_values($characters),
+        'studios' => array_values($studios),
+        'genres' => array_values($genres),
+        'media_relations' => $mediaRelations,
+        'media_characters' => $mediaCharacters,
+        'media_studios' => $mediaStudios,
+        'media_genres' => $mediaGenres,
+    ];
+}
 }

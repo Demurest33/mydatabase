@@ -105,11 +105,37 @@
         }
         .timeline-desc {
             font-size: 0.9rem; color: var(--text-dim); margin-top: 10px;
-            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-            overflow: hidden; line-height: 1.5;
+            max-height: 90px; overflow-y: auto; line-height: 1.5;
+            padding-right: 15px;
+            scrollbar-width: thin; scrollbar-color: var(--border) transparent;
         }
-        .stat-group { display: flex; gap: 20px; font-size: 0.85rem; color: var(--text-dim); margin-top: 15px; }
+        .timeline-desc::-webkit-scrollbar { width: 5px; }
+        .timeline-desc::-webkit-scrollbar-track { background: transparent; }
+        .timeline-desc::-webkit-scrollbar-thumb { background-color: var(--border); border-radius: 10px; }
+        .timeline-desc:hover::-webkit-scrollbar-thumb { background-color: var(--accent); }
+
+        .stat-group { display: flex; gap: 20px; font-size: 0.85rem; color: var(--text-dim); margin-top: 15px; flex-wrap: wrap; }
         .stat-group b { color: white; margin-left: 5px; }
+
+        .characters-list { margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border); }
+        .characters-list h4 { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        
+        .character-scroll { 
+            display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; 
+            margin-right: -25px; padding-right: 25px; /* Evita que el contenedor corte a los personajes bruscamente */
+            scrollbar-width: thin; scrollbar-color: var(--accent) rgba(255,255,255,0.02); 
+        }
+        .character-scroll::-webkit-scrollbar { height: 8px; }
+        .character-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; margin-right: 20px; }
+        .character-scroll::-webkit-scrollbar-thumb { background-color: var(--accent); border-radius: 10px; }
+        
+        .char-card { min-width: 65px; width: 65px; text-align: center; flex-shrink: 0; }
+
+        .char-card img { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid transparent; margin-bottom: 8px; transition: transform 0.2s; }
+        .char-card:hover img { transform: scale(1.1); }
+        .char-card.main img { border-color: var(--accent); }
+        .char-card p { font-size: 0.65rem; color: var(--text-main); line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 2px; }
+        .char-role { font-size: 0.55rem; color: var(--accent); text-transform: uppercase; font-weight: 800; }
 
         /* Generic Grid (for Source & Others) */
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
@@ -206,12 +232,30 @@
                                         @if(isset($item['averageScore']))
                                             <div>Puntuación: <b>{{ $item['averageScore'] }}%</b></div>
                                         @endif
+                                        @if(!empty($item['studios']['nodes']))
+                                            <div>Estudio: <b>{{ implode(', ', array_column($item['studios']['nodes'], 'name')) }}</b></div>
+                                        @endif
                                     </div>
                                     <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
                                     @foreach($item['genres'] ?? [] as $genre)
                                         <span style="font-size: 0.7rem; padding: 3px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; color: var(--text-dim);">{{ $genre }}</span>
                                     @endforeach
                                     </div>
+                                    
+                                    @if(!empty($item['characters']['edges']))
+                                    <div class="characters-list">
+                                        <h4>Reparto de Personajes</h4>
+                                        <div class="character-scroll">
+                                            @foreach($item['characters']['edges'] as $edge)
+                                                <div class="char-card {{ strtolower($edge['role']) }}">
+                                                    <img src="{{ $edge['node']['image']['large'] ?? '' }}" alt="{{ $edge['node']['name']['full'] ?? '' }}" title="{{ $edge['node']['name']['full'] ?? '' }}">
+                                                    <p>{{ $edge['node']['name']['full'] ?? 'Desconocido' }}</p>
+                                                    <span class="char-role">{{ $edge['role'] }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

@@ -112,7 +112,7 @@ class CharacterController extends Controller
     public function storeAsset(Request $request, $id)
     {
         $request->validate([
-            'file' => 'nullable|file|max:20480',
+            'file' => 'nullable|file|max:524288',
             'url' => 'nullable|url|max:500',
             'title' => 'nullable|string|max:255',
             'other_characters' => 'nullable|array',

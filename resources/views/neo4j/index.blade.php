@@ -51,7 +51,7 @@
             transform: scale(1.02);
         }
 
-        .content { max-width: 1200px; margin: 0 auto 100px; padding: 0 20px; }
+        .content { max-width: 1100px; margin: 0 auto 100px; padding: 0 20px; }
         
         .section-title { 
             font-size: 1.8rem; margin-top: 60px; margin-bottom: 40px; 
@@ -60,127 +60,134 @@
         .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
         .section-title span { color: var(--accent); font-size: 1.2rem; }
 
-        /* Accordion Container */
-        .timeline-accordion {
-            display: flex;
-            gap: 15px;
-            min-height: 600px;
-            margin-bottom: 80px;
-            align-items: stretch;
-            padding: 20px 0;
+        .timeline-container { position: relative; max-width: 900px; margin: 0 auto; padding: 40px 0; }
+        .timeline-container::before {
+            content: ''; position: absolute; top: 0; left: 120px;
+            height: 100%; width: 2px; background: var(--border);
         }
 
-        .timeline-item {
+        .timeline-item { position: relative; padding-left: 170px; margin-bottom: 80px; display: flex; opacity: 0; animation: scaleIn 0.5s forwards; }
+        @keyframes scaleIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .timeline-year { 
+            position: absolute; left: 0; width: 90px; text-align: right; 
+            top: 30px; font-weight: 800; color: var(--accent); font-size: 1.8rem;
+        }
+        .timeline-node { 
+            position: absolute; left: 115px; top: 40px;
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 15px var(--accent);
+            z-index: 2;
+        }
+
+        /* LOCAL SLIDING TABS CARD */
+        .timeline-card {
+            background: var(--card-bg); border-radius: 20px;
+            border: 1px solid var(--border); overflow: hidden;
+            display: flex; flex-direction: row; align-items: stretch;
+            width: 100%; height: 420px; /* Altura controlada */
+            transition: all 0.3s;
+        }
+        
+        .sliding-panel {
             position: relative;
             flex: 1;
-            min-width: 70px;
+            min-width: 60px;
             cursor: pointer;
-            transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
-            border-radius: 30px;
+            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
             overflow: hidden;
-            border: 1px solid var(--border);
-            background: var(--card-bg);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
         }
 
-        /* ACTIVE STATE */
-        .timeline-item.active {
-            flex: 15;
+        .sliding-panel.active {
+            flex: 10;
             cursor: default;
-            border-color: var(--accent);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
         }
 
-        /* BACKGROUND FOR COLLAPSED STATE */
-        .collapsed-bg {
+        /* Panel de Info */
+        .panel-info { border-right: 1px solid var(--border); background: var(--card-bg); }
+        .panel-characters { background: #1a1f29; }
+
+        /* Background for collapsed stage */
+        .panel-collapsed-bg {
             position: absolute;
             inset: 0;
             background-size: cover;
             background-position: center;
+            opacity: 0.15;
             z-index: 1;
-            transition: opacity 0.5s, filter 0.5s;
+            filter: grayscale(1) blur(2px);
+            transition: opacity 0.4s;
         }
-        .timeline-item.active .collapsed-bg {
-            opacity: 0.08;
-            filter: blur(20px);
-        }
+        .sliding-panel.active .panel-collapsed-bg { opacity: 0; }
 
-        /* COLLAPSED TITLE (Vertical) */
-        .collapsed-title {
+        /* Vertical label */
+        .panel-label {
             position: absolute;
-            bottom: 50px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%) rotate(-90deg);
+            transform: translate(-50%, -50%) rotate(-90deg);
             white-space: nowrap;
             font-weight: 800;
-            font-size: 1.2rem;
-            color: white;
-            z-index: 10;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            width: 500px;
+            letter-spacing: 3px;
+            color: var(--accent);
+            z-index: 5;
+            pointer-events: none;
+            width: 200px;
             text-align: center;
         }
-        .timeline-item.active .collapsed-title {
-            opacity: 0;
-        }
+        .sliding-panel.active .panel-label { opacity: 0; }
 
-        /* ITEM CONTENT (Visible only when expanded) */
-        .item-content {
+        /* Inner Content */
+        .panel-content {
             position: relative;
-            z-index: 20;
-            display: flex;
-            height: 100%;
-            width: 100%;
+            z-index: 10;
             opacity: 0;
             visibility: hidden;
+            width: 100%;
+            height: 100%;
+            display: flex;
             transition: opacity 0.4s;
-            overflow: hidden;
         }
-        .timeline-item.active .item-content {
+        .sliding-panel.active .panel-content {
             opacity: 1;
             visibility: visible;
             transition-delay: 0.3s;
         }
 
-        .timeline-cover { width: 320px; flex-shrink: 0; position: relative; }
-        .timeline-cover img { width: 100%; height: 100%; object-fit: cover; }
+        /* Styles for Info Content */
+        .info-cover { width: 220px; flex-shrink: 0; }
+        .info-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .info-body { padding: 30px; flex: 1; overflow-y: auto; }
 
-        .timeline-info { padding: 40px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: thin; }
-        .timeline-info::-webkit-scrollbar { width: 6px; }
-        .timeline-info::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-        
-        .timeline-info h3 { font-size: 2rem; font-weight: 800; margin-bottom: 15px; line-height: 1.1; display: block; }
-        
+        /* Styles for characters content */
+        .char-grid { 
+            padding: 30px; 
+            width: 100%;
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .char-item { text-align: center; }
+        .char-item img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); margin-bottom: 10px; }
+        .char-item p { font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; }
+        .char-item span { font-size: 0.6rem; color: var(--accent); text-transform: uppercase; font-weight: 800; }
+
         .status-tag { 
-            display: inline-block; padding: 6px 15px; border-radius: 8px; 
-            font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
-            background: var(--accent); color: white; margin-bottom: 15px;
+            display: inline-block; padding: 5px 12px; border-radius: 6px; 
+            font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+            background: rgba(116, 81, 241, 0.15); color: var(--accent); border: 1px solid rgba(116, 81, 241, 0.3); margin-bottom: 15px;
         }
         
         .timeline-desc {
-            font-size: 1rem; color: var(--text-dim); margin-top: 15px;
-            line-height: 1.6; padding-right: 20px;
+            font-size: 0.9rem; color: var(--text-dim); margin-top: 10px;
+            line-height: 1.5;
         }
-
-        .stat-group { display: flex; gap: 30px; font-size: 0.95rem; color: var(--text-dim); margin-top: 25px; flex-wrap: wrap; }
-        .stat-group b { color: white; margin-left: 5px; }
-
-        .characters-list { margin-top: 40px; padding-top: 30px; border-top: 1px dashed var(--border); }
-        .characters-list h4 { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
-        .character-scroll { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; }
-        .character-scroll::-webkit-scrollbar { height: 8px; }
-        .character-scroll::-webkit-scrollbar-thumb { background-color: var(--accent); border-radius: 10px; }
-        
-        .char-card { min-width: 80px; text-align: center; flex-shrink: 0; }
-        .char-card img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid transparent; margin-bottom: 10px; transition: transform 0.3s; }
-        .char-card.main img { border-color: var(--accent); }
-        .char-card:hover img { transform: scale(1.1); }
-        .char-card p { font-size: 0.75rem; color: var(--text-main); font-weight: 600; }
-        .char-role { font-size: 0.6rem; color: var(--accent); text-transform: uppercase; font-weight: 800; }
 
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
         .grid-card {
@@ -200,11 +207,11 @@
 <body>
 
     <section class="hero">
-        <h1>Neo4j <span>Franchise</span></h1>
+        <h1>Neo4j <span>Timeline</span></h1>
         <div class="search-container">
             <form action="{{ route('neo4j.index') }}" method="GET" id="franchise-form">
                 <select name="franchise" onchange="document.getElementById('franchise-form').submit()">
-                    <option value="">Selecciona una franquicia en Neo4j...</option>
+                    <option value="">Cargar desde Neo4j...</option>
                     @foreach($franchises ?? [] as $f)
                         <option value="{{ $f }}" {{ $search == $f ? 'selected' : '' }}>{{ $f }}</option>
                     @endforeach
@@ -218,91 +225,81 @@
             
             <div style="text-align: center; margin-bottom: 60px; padding: 40px; background: radial-gradient(circle at center, rgba(116,81,241,0.08), transparent); border-radius: 40px; border: 1px dashed var(--border);">
                 <h2 style="font-size: 2.5rem; margin-bottom: 10px;">{{ $franchiseData['root']['title']['romaji'] }}</h2>
-                <p style="color: var(--text-dim);">Reconstrucción dinámica desde tu base de datos de grafos.</p>
+                <p style="color: var(--text-dim);">Reconstrucción desde base de datos de grafos.</p>
             </div>
 
             <!-- Material Original -->
             @if(count($franchiseData['source']) > 0)
             <div class="franchise-section">
-                <h3 class="section-title">Material Original <span>(Manga / Novela)</span></h3>
+                <h3 class="section-title">Material Original</h3>
                 <div class="grid-container">
                     @foreach($franchiseData['source'] as $item)
                         <div class="grid-card">
                             <span class="tag-source">{{ $item['format'] }}</span>
                             <img src="{{ $item['coverImage']['large'] }}" alt="">
                             <h4>{{ $item['title']['romaji'] }}</h4>
-                            <div class="grid-meta">
-                                <span>Lanzamiento</span>
-                                <b>{{ $item['startDate']['year'] ?? 'TBA' }}</b>
-                            </div>
+                            <div class="grid-meta"><span>Lanzamiento</span><b>{{ $item['startDate']['year'] ?? 'TBA' }}</b></div>
                         </div>
                     @endforeach
                 </div>
             </div>
             @endif
 
-            <!-- Sliding Timeline Accordion -->
+            <!-- Vertical Timeline with Internal Sliding Tabs -->
             @if(count($franchiseData['timeline']) > 0)
             <div class="franchise-section">
-                <h3 class="section-title">Cronología Deslizable <span>(Haz clic para expandir)</span></h3>
-                <div class="timeline-accordion">
-                    @foreach($franchiseData['timeline'] as $index => $item)
-                        <div class="timeline-item {{ $index === 0 ? 'active' : '' }}">
-                            <!-- Background for closed state -->
-                            <div class="collapsed-bg" style="background-image: url('{{ $item['coverImage']['large'] }}')"></div>
+                <h3 class="section-title">Cronología <span>(Tabs deslizable dentro de cada item)</span></h3>
+                <div class="timeline-container">
+                    @foreach($franchiseData['timeline'] as $item)
+                        <div class="timeline-item">
+                            <div class="timeline-year">{{ $item['startDate']['year'] ?? 'TBA' }}</div>
+                            <div class="timeline-node"></div>
                             
-                            <!-- Vertical title for closed state -->
-                            <div class="collapsed-title">
-                                {{ $item['startDate']['year'] ?? 'TBA' }} — {{ $item['title']['romaji'] }}
-                            </div>
-
-                            <!-- Full Content for active state -->
-                            <div class="item-content">
-                                <div class="timeline-cover">
-                                    <img src="{{ $item['coverImage']['large'] }}" alt="">
-                                </div>
-                                <div class="timeline-info">
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                        <span class="status-tag">{{ $item['format'] }} • {{ $item['status'] }}</span>
-                                        <div style="font-size: 2rem; font-weight: 800; color: var(--accent); opacity: 0.5;">{{ $item['startDate']['year'] }}</div>
-                                    </div>
-                                    <h3>{{ $item['title']['romaji'] }}</h3>
-                                    
-                                    @if(!empty($item['description']))
-                                        <div class="timeline-desc">
-                                            {!! strip_tags($item['description']) !!}
+                            <div class="timeline-card">
+                                <!-- PANEL 1: INFO -->
+                                <div class="sliding-panel panel-info active">
+                                    <div class="panel-collapsed-bg" style="background-image: url('{{ $item['coverImage']['large'] }}')"></div>
+                                    <div class="panel-label">Temporada</div>
+                                    <div class="panel-content">
+                                        <div class="info-cover"><img src="{{ $item['coverImage']['large'] }}" alt=""></div>
+                                        <div class="info-body">
+                                            <span class="status-tag">{{ $item['format'] }} • {{ $item['status'] }}</span>
+                                            <h3 style="font-size: 1.5rem; margin-bottom: 10px;">{{ $item['title']['romaji'] }}</h3>
+                                            @if(!empty($item['description']))
+                                                <div class="timeline-desc">{!! strip_tags($item['description']) !!}</div>
+                                            @endif
+                                            <div style="margin-top: 20px; font-size: 0.85rem; color: var(--text-dim);">
+                                                @if(!empty($item['studios']['nodes']))
+                                                    Estudio: <b style="color: white;">{{ implode(', ', array_column($item['studios']['nodes'], 'name')) }}</b>
+                                                @endif
+                                                <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                                                    @foreach($item['genres'] ?? [] as $genre)
+                                                        <span style="font-size: 0.65rem; padding: 2px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">{{ $genre }}</span>
+                                                    @endforeach
+                                                </div>
+                                            </div>
                                         </div>
-                                    @endif
-                                    
-                                    <div class="stat-group">
-                                        @if($item['averageScore'])
-                                            <div>Puntuación: <b>{{ $item['averageScore'] }}%</b></div>
-                                        @endif
-                                        @if(!empty($item['studios']['nodes']))
-                                            <div>Estudio: <b>{{ implode(', ', array_column($item['studios']['nodes'], 'name')) }}</b></div>
-                                        @endif
                                     </div>
+                                </div>
 
-                                    <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
-                                    @foreach($item['genres'] ?? [] as $genre)
-                                        <span style="font-size: 0.75rem; padding: 4px 12px; background: rgba(116, 81, 241, 0.1); border: 1px solid rgba(116, 81, 241, 0.2); border-radius: 6px; color: #a5b4fc;">{{ $genre }}</span>
-                                    @endforeach
-                                    </div>
-
-                                    @if(!empty($item['characters']['edges']))
-                                    <div class="characters-list">
-                                        <h4>Cast Sincronizado</h4>
-                                        <div class="character-scroll">
+                                <!-- PANEL 2: CHARACTERS -->
+                                <div class="sliding-panel panel-characters">
+                                    <div class="panel-collapsed-bg" style="background-image: url('{{ $item['coverImage']['large'] }}')"></div>
+                                    <div class="panel-label">Personajes</div>
+                                    <div class="panel-content">
+                                        <div class="char-grid">
                                             @foreach($item['characters']['edges'] as $edge)
-                                                <div class="char-card {{ strtolower($edge['role']) }}">
+                                                <div class="char-item">
                                                     <img src="{{ $edge['node']['image']['large'] ?? '' }}" alt="">
                                                     <p>{{ $edge['node']['name']['full'] ?? 'N/A' }}</p>
-                                                    <span class="char-role">{{ $edge['role'] }}</span>
+                                                    <span>{{ $edge['role'] }}</span>
                                                 </div>
                                             @endforeach
+                                            @if(empty($item['characters']['edges']))
+                                                <p style="grid-column: 1/-1; text-align: center; padding-top: 50px; color: var(--text-dim);">No hay personajes sincronizados.</p>
+                                            @endif
                                         </div>
                                     </div>
-                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -311,7 +308,7 @@
             </div>
             @endif
 
-            <!-- Otros / Spin-offs -->
+            <!-- Especiales -->
             @if(count($franchiseData['others']) > 0)
             <div class="franchise-section">
                 <h3 class="section-title">Especiales & Spin-offs</h3>
@@ -321,10 +318,7 @@
                             <span class="tag-other">{{ $item['format'] }}</span>
                             <img src="{{ $item['coverImage']['large'] }}" alt="">
                             <h4>{{ $item['title']['romaji'] }}</h4>
-                            <div class="grid-meta">
-                                <span>Lanzamiento</span>
-                                <b>{{ $item['startDate']['year'] ?? 'TBA' }}</b>
-                            </div>
+                            <div class="grid-meta"><span>Lanzamiento</span><b>{{ $item['startDate']['year'] ?? 'TBA' }}</b></div>
                         </div>
                     @endforeach
                 </div>
@@ -333,27 +327,32 @@
 
         @elseif($search)
             <div style="text-align: center; padding: 100px 20px; background: var(--card-bg); border-radius: 32px; border: 1px solid var(--border);">
-                <p style="font-size: 1.5rem; margin-bottom: 10px; color: white;">Franquicia "{{ $search }}" disponible</p>
-                <p style="color: var(--text-dim);">Haz clic en el selector superior para cargar los datos sincronizados.</p>
+                <p style="font-size: 1.5rem; margin-bottom: 10px; color: white;">Cargando "{{ $search }}"</p>
             </div>
         @else
            <div style="text-align: center; padding: 100px 20px; color: var(--text-dim);">
-                <p style="font-size: 1.2rem;">Selecciona una franquicia sincronizada en Neo4j para ver su cronología deslizable.</p>
+                <p style="font-size: 1.2rem;">Selecciona una franquicia para ver sus cronología con tabs internas.</p>
             </div>
         @endif
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const items = document.querySelectorAll('.timeline-item');
-            items.forEach(item => {
-                item.addEventListener('click', () => {
-                    items.forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
+            document.querySelectorAll('.timeline-card').forEach(card => {
+                const panels = card.querySelectorAll('.sliding-panel');
+                panels.forEach(panel => {
+                    panel.addEventListener('click', () => {
+                        panels.forEach(p => p.classList.remove('active'));
+                        panel.classList.add('active');
+                    });
                 });
             });
         });
     </script>
+
+</body>
+</html>
+
 
 </body>
 </html>

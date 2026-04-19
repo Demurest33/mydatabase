@@ -12,6 +12,12 @@ Route::get('/', function () {
 
 Route::get('/anilist', [AnilistController::class, 'index'])->name('anilist.index');
 
+use App\Http\Controllers\WouldYouRatherController;
+Route::get('/would-you-rather', [WouldYouRatherController::class, 'index'])->name('wyr.index');
+Route::post('/would-you-rather/fetch', [WouldYouRatherController::class, 'fetch'])->name('wyr.fetch');
+Route::get('/would-you-rather/game', [WouldYouRatherController::class, 'game'])->name('wyr.game');
+Route::get('/would-you-rather/progress/{batchId}', [WouldYouRatherController::class, 'progress'])->name('wyr.progress');
+
 Route::get('/neo4j', [Neo4jController::class, 'index'])->name('neo4j.index');
 Route::get('/neo4j/data', [Neo4jController::class, 'graphData'])->name('neo4j.data');
 

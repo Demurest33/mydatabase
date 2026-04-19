@@ -23,22 +23,39 @@ class AnilistService
             'variables' => $variables,
         ]);
 
+        if ($response->status() === 429) {
+            $retryAfter = (int) $response->header('Retry-After', 60);
+            throw new \App\Exceptions\RateLimitException('Rate limit exceeded', $retryAfter);
+        }
+
         if ($response->failed()) {
             throw new Exception('Error de la API de AniList: ' . $response->body());
         }
 
-        return $response->json();
+        $json = $response->json();
+        
+        // Sometimes 429 errors come as GraphQL errors with status 200
+        if (isset($json['errors'])) {
+            foreach ($json['errors'] as $error) {
+                if (isset($error['status']) && $error['status'] == 429) {
+                    $retryAfter = (int) $response->header('Retry-After', 60);
+                    throw new \App\Exceptions\RateLimitException('Rate limit exceeded', $retryAfter);
+                }
+            }
+        }
+
+        return $json;
     }
 
     /**
      * Hace el recorrido recursivo para encontrar toda la franquicia.
      */
-    public function getFullFranchise(string $search): array
+    public function getFullFranchise(?string $search = null, ?int $id = null, string $type = 'ANIME'): array
     {
         // 1. Búsqueda inicial
         $initialQuery = '
-        query ($search: String) {
-            Media(search: $search, type: ANIME) {
+        query ($search: String, $id: Int, $type: MediaType) {
+            Media(search: $search, id: $id, type: $type) {
                 id
                 title { romaji native }
                 description
@@ -64,7 +81,7 @@ class AnilistService
         }
         ';
 
-        $response = $this->query($initialQuery, ['search' => $search]);
+        $response = $this->query($initialQuery, ['search' => $search, 'id' => $id, 'type' => $type]);
         $initialMedia = $response['data']['Media'] ?? null;
 
         if (!$initialMedia) {
@@ -247,9 +264,9 @@ class AnilistService
         return $d1_day <=> $d2_day;
     }
 
-    public function getGraphData(string $search): array
+    public function getGraphData(?string $search = null, ?int $id = null, string $type = 'ANIME'): array
     {
-        $franchise = $this->getFullFranchise($search);
+        $franchise = $this->getFullFranchise($search, $id, $type);
 
         $items = array_merge(
             $franchise['timeline'] ?? [],

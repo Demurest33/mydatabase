@@ -5,10 +5,9 @@ use App\Http\Controllers\AnilistController;
 use App\Http\Controllers\Neo4jController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\FranchiseController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [AssetController::class, 'index'])->name('home');
 
 Route::get('/anilist', [AnilistController::class, 'index'])->name('anilist.index');
 
@@ -25,6 +24,8 @@ Route::get('/characters', [CharacterController::class, 'index'])->name('characte
 Route::get('/api/characters/search', [CharacterController::class, 'searchJson'])->name('api.characters.search');
 Route::get('/characters/{id}', [CharacterController::class, 'show'])->name('characters.show');
 Route::post('/characters/{id}/assets', [CharacterController::class, 'storeAsset'])->name('characters.assets.store');
+
+Route::get('/franchises', [FranchiseController::class, 'index'])->name('franchises.index');
 
 Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
 Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');

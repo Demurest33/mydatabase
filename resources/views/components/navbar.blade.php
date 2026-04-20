@@ -19,6 +19,7 @@
             <div class="hidden md:flex flex-grow items-center justify-center space-x-1">
                 <x-nav-link href="{{ route('anilist.index') }}" :active="request()->routeIs('anilist.*')">Anilist Sync</x-nav-link>
                 <x-nav-link href="{{ route('wyr.index') }}" :active="request()->routeIs('wyr.*')">Would You Rather</x-nav-link>
+                <x-nav-link href="{{ route('franchises.index') }}" :active="request()->routeIs('franchises.*')">Franchises</x-nav-link>
                 <x-nav-link href="{{ route('characters.index') }}" :active="request()->routeIs('characters.*')">Characters</x-nav-link>
                 <x-nav-link href="{{ route('neo4j.index') }}" :active="request()->routeIs('neo4j.*')">Graph Data</x-nav-link>
             </div>
@@ -48,6 +49,7 @@
         <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <x-nav-link href="{{ route('anilist.index') }}" :active="request()->routeIs('anilist.*')" class="block">Anilist Sync</x-nav-link>
             <x-nav-link href="{{ route('wyr.index') }}" :active="request()->routeIs('wyr.*')" class="block">Would You Rather</x-nav-link>
+            <x-nav-link href="{{ route('franchises.index') }}" :active="request()->routeIs('franchises.*')" class="block">Franchises</x-nav-link>
             <x-nav-link href="{{ route('characters.index') }}" :active="request()->routeIs('characters.*')" class="block">Characters</x-nav-link>
             <x-nav-link href="{{ route('neo4j.index') }}" :active="request()->routeIs('neo4j.*')" class="block">Graph Data</x-nav-link>
             <a href="{{ route('assets.create') }}" class="block px-3 py-2 rounded-md text-base font-medium text-indigo-400 hover:text-indigo-300 hover:bg-gray-800 transition-colors">Add Asset</a>

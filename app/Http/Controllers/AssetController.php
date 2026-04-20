@@ -16,6 +16,85 @@ class AssetController extends Controller
         $this->neo4j = $neo4j;
     }
 
+    public function index()
+    {
+        try {
+            $client = $this->neo4j->client();
+            
+            // Fetch categories (Asset types) and their counts
+            $categories = [];
+            $resCats = $client->run('MATCH (a:Asset) WHERE a.type IS NOT NULL RETURN a.type as type, count(a) as count ORDER BY count DESC');
+            foreach ($resCats as $record) {
+                $categories[] = [
+                    'name' => $record->get('type'),
+                    'count' => $record->get('count')
+                ];
+            }
+
+            // Fallback default categories if empty
+            if (empty($categories)) {
+                $defaultTypes = ['IMG', 'GIF', 'VIDEO', 'AMV', 'MUSIC', 'ANIME', 'MANGA', 'LIGHT NOVEL', 'DOUJIN', 'WALLPAPER ENGINE'];
+                foreach ($defaultTypes as $dt) {
+                    $categories[] = ['name' => $dt, 'count' => 0];
+                }
+            }
+
+            // Fetch the latest assets
+            $assets = [];
+            $query = '
+                MATCH (a:Asset)
+                OPTIONAL MATCH (c:Character)-[:HAS_ASSET]->(a)
+                RETURN a, count(c) as charactersCount
+                ORDER BY a.createdAt DESC
+                LIMIT 50
+            ';
+            $resAssets = $client->run($query);
+            foreach ($resAssets as $rec) {
+                $a = $rec->get('a')->getProperties()->toArray();
+                
+                // Construct standard paths
+                $fileUrl = $a['url'] ?? null;
+                if (!$fileUrl && isset($a['filename'])) {
+                    $fileUrl = asset('storage/assets/' . $a['filename']);
+                }
+
+                $coverUrl = null;
+                if (isset($a['coverFilename'])) {
+                    $coverUrl = asset('storage/assets/covers/' . $a['coverFilename']);
+                }
+
+                $a['fileUrl'] = $fileUrl;
+                $a['coverUrl'] = $coverUrl;
+                $a['tagsCount'] = $rec->get('charactersCount');
+
+                // Fix Neo4j DateTime formatting
+                $createdAt = $a['createdAt'] ?? now();
+                if (is_object($createdAt)) {
+                    if (method_exists($createdAt, 'toDateTime')) {
+                        $createdAt = $createdAt->toDateTime();
+                    } elseif (method_exists($createdAt, 'format')) {
+                        $createdAt = $createdAt->format('Y-m-d H:i:s');
+                    } else {
+                        // Final fallback just in case
+                        try {
+                            $createdAt = (string) $createdAt;
+                        } catch (\Exception $e) {
+                            $createdAt = now()->format('Y-m-d H:i:s');
+                        }
+                    }
+                }
+                $a['createdAt'] = $createdAt;
+
+                $assets[] = $a;
+            }
+
+            return view('welcome', compact('categories', 'assets'));
+
+        } catch (Exception $e) {
+            return view('welcome', ['categories' => [], 'assets' => [], 'error' => $e->getMessage()]);
+        }
+    }
+
     public function create()
     {
         try {

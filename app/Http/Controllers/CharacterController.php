@@ -46,6 +46,60 @@ class CharacterController extends Controller
         return view('characters.index', compact('characters', 'search'));
     }
 
+    public function searchJson(Request $request)
+    {
+        $search = $request->input('search');
+        $franchise = $request->input('franchise');
+        $characters = [];
+
+        try {
+            $client = $this->neo4j->client();
+            
+            $query = '
+                MATCH (c:Character)
+                OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(f:Franchise)
+            ';
+            
+            $where = [];
+            $params = [];
+
+            if ($search) {
+                $where[] = '(toLower(c.name) CONTAINS toLower($search) OR c.id = $search)';
+                $params['search'] = $search;
+            }
+
+            if ($franchise && $franchise !== 'ALL') {
+                $where[] = 'f.name = $franchise';
+                $params['franchise'] = $franchise;
+            }
+
+            if (count($where) > 0) {
+                $query .= ' WHERE ' . implode(' AND ', $where);
+            }
+
+            $query .= '
+                WITH c, collect(DISTINCT f.name) as franchises, collect(DISTINCT r.role) as roles
+                WITH c, franchises, CASE WHEN "MAIN" IN roles THEN 1 ELSE 0 END as isMain
+                RETURN c, franchises, isMain
+                ORDER BY isMain DESC, c.name ASC
+                LIMIT 50
+            ';
+            
+            $result = $client->run($query, $params);
+            
+            foreach ($result as $rec) {
+                $char = $rec->get('c')->getProperties()->toArray();
+                $char['franchises'] = $rec->get('franchises')->toArray();
+                $char['isMain'] = $rec->get('isMain');
+                $characters[] = $char;
+            }
+
+            return response()->json($characters);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function show($id)
     {
         try {
@@ -115,6 +169,8 @@ class CharacterController extends Controller
             'file' => 'nullable|file|max:524288',
             'url' => 'nullable|url|max:500',
             'title' => 'nullable|string|max:255',
+            'asset_type' => 'required|string|in:ANIME,MANGA,LIGHT NOVEL,DOUJIN,WALLPAPER ENGINE,IMG,MUSIC,GIF,AMV',
+            'cover_image' => 'nullable|image|max:10240',
             'other_characters' => 'nullable|array',
             'other_characters.*' => 'integer'
         ]);
@@ -123,11 +179,12 @@ class CharacterController extends Controller
             $client = $this->neo4j->client();
             $assetId = Str::uuid()->toString();
             $title = $request->input('title');
+            $assetType = $request->input('asset_type');
             
             $filename = null;
             $url = $request->input('url');
-            $type = 'URL';
             $mimeType = 'text/html';
+            $coverFilename = null;
 
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
@@ -137,12 +194,19 @@ class CharacterController extends Controller
                 $filename = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
                 
                 $file->storeAs('assets', $filename, 'public');
-                $type = strtoupper($extension);
                 if (!$title) $title = pathinfo($originalName, PATHINFO_FILENAME);
             } else if ($url) {
                 if (!$title) $title = parse_url($url, PHP_URL_HOST) ?: 'Enlace Externo';
             } else {
                 return back()->with('error', 'Debes proporcionar un archivo o una URL válida.');
+            }
+
+            if ($request->hasFile('cover_image')) {
+                $coverFile = $request->file('cover_image');
+                $coverExt = $coverFile->getClientOriginalExtension();
+                $coverOriginalName = $coverFile->getClientOriginalName();
+                $coverFilename = time() . '_cover_' . Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME)) . '.' . $coverExt;
+                $coverFile->storeAs('assets/covers', $coverFilename, 'public');
             }
 
             // Preparar lista de IDs de personajes (el actual + los extras, casteados a entero rigurosamente)
@@ -160,9 +224,10 @@ class CharacterController extends Controller
                     id: $assetId,
                     title: $title,
                     filename: $filename,
+                    coverFilename: $coverFilename,
                     url: $url,
                     mimeType: $mimeType,
-                    type: $type,
+                    type: $assetType,
                     createdAt: datetime(),
                     visibility: "public"
                 })
@@ -180,9 +245,10 @@ class CharacterController extends Controller
                 'assetId' => $assetId,
                 'title' => $title,
                 'filename' => $filename,
+                'coverFilename' => $coverFilename,
                 'url' => $url,
                 'mimeType' => $mimeType,
-                'type' => $type,
+                'assetType' => $assetType,
                 'storageId' => $filename ? "local_storage" : "web_storage",
                 'storageName' => $filename ? "Local Server" : "External Web",
                 'storageType' => $filename ? "LOCAL" : "REMOTE",

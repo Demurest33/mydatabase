@@ -1,325 +1,228 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargar Recurso Centralizado</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #0b111a;
-            --card-bg: #151d29;
-            --accent: #10b981; /* Emerald para la creación global */
-            --accent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --text-main: #ffffff;
-            --text-dim: #94a3b8;
-            --border: rgba(255, 255, 255, 0.08);
-            --glass: rgba(255, 255, 255, 0.03);
-        }
+<x-layout>
+    <x-slot:title>Add New Asset</x-slot>
 
-        body {
-            font-family: 'Outfit', sans-serif; background-color: var(--bg);
-            color: var(--text-main); margin: 0; padding: 0; min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+    <!-- Alpine requires defer, but Vite might have it. Let's make sure it's loaded if not via CDN -->
+    @push('scripts')
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @endpush
 
-        .container {
-            width: 100%; max-width: 800px;
-            background: var(--card-bg); border-radius: 30px;
-            border: 1px solid var(--border); padding: 50px;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-            margin: 40px 0;
-        }
-
-        h1 { font-size: 2.5rem; font-weight: 800; margin-top: 0; margin-bottom: 30px; text-align: center; }
-        h1 span { background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        .tabs { display: flex; gap: 15px; margin-bottom: 30px; }
-        .tab-btn {
-            flex: 1; padding: 15px; border-radius: 15px; font-size: 1rem; font-weight: 700;
-            cursor: pointer; border: 1px solid var(--border); background: var(--glass);
-            color: var(--text-dim); transition: 0.3s;
-        }
-        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-        /* Drag & Drop Zone */
-        .drop-zone {
-            border: 2px dashed var(--border); border-radius: 20px;
-            padding: 60px 20px; text-align: center; background: rgba(0,0,0,0.2);
-            transition: 0.3s; cursor: pointer; margin-bottom: 20px;
-        }
-        .drop-zone.dragover { border-color: var(--accent); background: rgba(16, 185, 129, 0.05); }
-        .drop-zone input[type="file"] { display: none; }
-        .drop-zone p { font-size: 1.1rem; color: var(--text-dim); margin-bottom: 10px; }
-        .drop-zone span { color: var(--accent); font-weight: 700; }
-
-        input[type="text"] {
-            width: 100%; padding: 18px 20px; border-radius: 15px;
-            background: rgba(0,0,0,0.2); border: 1px solid var(--border);
-            color: white; font-size: 1rem; margin-bottom: 20px; outline: none;
-            transition: 0.3s;
-        }
-        input[type="text"]:focus { border-color: var(--accent); }
-
-        /* Character Selector */
-        .char-section {
-            background: var(--glass); border: 1px solid var(--border);
-            border-radius: 20px; padding: 25px; margin-top: 30px;
-        }
-        
-        .filters { display: flex; gap: 15px; margin-bottom: 20px; }
-        .filters select, .filters input {
-            flex: 1; padding: 12px 15px; border-radius: 12px; font-size: 0.9rem;
-            background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; outline: none;
-        }
-
-        .char-list {
-            max-height: 250px; overflow-y: auto; scrollbar-width: thin;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
-        }
-
-        .char-select-label {
-            display: flex; align-items: center; gap: 12px; padding: 10px;
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
-            cursor: pointer; transition: 0.2s;
-        }
-        .char-select-label:hover { border-color: var(--accent); }
-        .char-select-label img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
-        .char-info { flex: 1; overflow: hidden; }
-        .char-info p { margin: 0; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .char-info span { font-size: 0.65rem; color: var(--accent); font-weight: 800; }
-
-        .submit-btn {
-            width: 100%; padding: 20px; border-radius: 20px; border: none;
-            background: var(--accent-gradient); color: white; font-size: 1.2rem; font-weight: 800;
-            cursor: pointer; transition: 0.3s; margin-top: 30px;
-            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
-        }
-        .submit-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4); }
-
-        .nav-link { position: fixed; top: 30px; left: 30px; color: var(--text-dim); text-decoration: none; font-weight: 600; }
-        .nav-link:hover { color: white; }
-    </style>
-</head>
-<body>
-
-    <a href="{{ route('characters.index') }}" class="nav-link">← Volver a Personajes</a>
-
-    <div class="container">
-        <h1>Centro de <span>Recursos</span></h1>
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        <h1 class="text-4xl font-extrabold text-white text-center mb-2">
+            Add Centralized <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Asset</span>
+        </h1>
+        <p class="text-gray-400 text-center mb-10">Upload or link an external file and tag the characters</p>
 
         @if(session('success'))
-            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; font-weight: 600;">
-                {{ session('success') }}
+            <div class="mb-6 bg-emerald-500/10 border border-emerald-500/50 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-3 shadow-lg">
+                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="font-medium">{{ session('success') }}</div>
             </div>
         @endif
 
         @if(session('error'))
-            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; font-weight: 600;">
-                {{ session('error') }}
+            <div class="mb-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl flex items-center gap-3 shadow-lg">
+                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="font-medium">{{ session('error') }}</div>
             </div>
         @endif
 
-        <div class="tabs">
-            <button class="tab-btn active" id="btn-file" onclick="switchTab('file')">Subir Archivo</button>
-            <button class="tab-btn" id="btn-url" onclick="switchTab('url')">Vincular Enlace</button>
-        </div>
-
-        <form action="{{ route('assets.store') }}" method="POST" enctype="multipart/form-data" id="assetForm">
-            @csrf
-            
-            <input type="text" name="title" placeholder="Título opcional del recurso (ej. Arte Conceptual)">
-
-            <!-- File Upload Area -->
-            <div id="file-area">
-                <div class="drop-zone" id="drop-zone">
-                    <p>Arrastra tu archivo aquí o <span>haz clic para buscar</span></p>
-                    <div id="file-name" style="font-size: 0.85rem; margin-top: 10px;">Ningún archivo seleccionado</div>
-                    <input type="file" name="file" id="file-input">
-                </div>
-            </div>
-
-            <!-- URL Area -->
-            <div id="url-area" style="display: none;">
-                <input type="text" name="url" placeholder="https://ejemplo.com/doc.pdf">
-            </div>
-
-            <!-- Progress Bar Area -->
-            <div id="progress-container" style="display: none; margin-top: 20px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span id="status-text" style="font-size: 0.85rem; color: var(--text-dim); font-weight: 700;">Subiendo archivo...</span>
-                    <span id="percent-text" style="font-size: 0.85rem; color: var(--accent); font-weight: 800;">0%</span>
-                </div>
-                <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.3); border-radius: 5px; overflow: hidden; border: 1px solid var(--border);">
-                    <div id="progress-bar" style="width: 0%; height: 100%; background: var(--accent-gradient); transition: width 0.3s; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);"></div>
-                </div>
-            </div>
-
-            <!-- Character Selection -->
-            <div class="char-section">
-                <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.2rem;">¿A quién pertenece este recurso?</h3>
-                
-                <div class="filters">
-                    <select id="franchise-filter">
-                        <option value="ALL">Todas las franquicias</option>
-                        @foreach($franchises as $f)
-                            <option value="{{ $f }}">{{ $f }}</option>
-                        @endforeach
-                    </select>
-                    <input type="text" id="char-search" placeholder="Buscar por nombre...">
-                </div>
-
-                <div class="char-list" id="char-list">
-                    @foreach($characters as $char)
-                        <label class="char-select-label" data-name="{{ strtolower($char['name']) }}" data-franchises="{{ implode(',', $char['franchises']) }}" data-main="{{ $char['isMain'] }}">
-                            <input type="checkbox" name="characters[]" value="{{ $char['id'] }}" style="accent-color: var(--accent);">
-                            <img src="{{ $char['image'] ?? 'https://via.placeholder.com/40' }}" alt="">
-                            <div class="char-info">
-                                <p title="{{ $char['name'] }}">{{ $char['name'] }}</p>
-                                @if($char['isMain'])
-                                    <span>PRINCIPAL</span>
-                                @else
-                                    <span style="color: var(--text-dim);">SECUNDARIO</span>
-                                @endif
-                            </div>
-                        </label>
+        @if($errors->any())
+            <div class="mb-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl shadow-lg">
+                <ul class="list-disc pl-5 space-y-1">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
                     @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('assets.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8" x-data="assetForm()">
+            @csrf
+
+            <!-- Asset Info Container -->
+            <div class="glass-panel rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl">
+                <h3 class="text-xl font-bold text-white border-b border-white/10 pb-4 mb-4">Core Metadata</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Asset Type <span class="text-red-400">*</span></label>
+                        <select name="asset_type" x-model="assetType" required class="w-full bg-gray-900 border border-gray-700 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+                            <option value="IMG">IMG (Image)</option>
+                            <option value="GIF">GIF (Animated Image)</option>
+                            <option value="VIDEO">VIDEO (Generic Video)</option>
+                            <option value="AMV">AMV (Anime Music Video)</option>
+                            <option value="MUSIC">MUSIC (Audio Track)</option>
+                            <option value="ANIME">ANIME (Episode/OVA)</option>
+                            <option value="MANGA">MANGA (Chapter/Volume)</option>
+                            <option value="LIGHT NOVEL">LIGHT NOVEL</option>
+                            <option value="DOUJIN">DOUJIN</option>
+                            <option value="WALLPAPER ENGINE">WALLPAPER ENGINE</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Title (Optional)</label>
+                        <input type="text" name="title" placeholder="Leave empty to use filename" class="w-full bg-gray-900 border border-gray-700 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors placeholder-gray-600">
+                    </div>
+                </div>
+
+                <!-- Main File / Link Switcher -->
+                <div class="p-6 bg-gray-900/50 rounded-xl border border-gray-800">
+                    <div class="flex gap-4 mb-6">
+                        <template x-for="mode in ['UPLOAD', 'LINK']">
+                            <button type="button" @click="sourceMode = mode" 
+                                :class="sourceMode === mode ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'"
+                                class="flex-1 py-2 rounded-lg border font-medium transition-all text-sm">
+                                <span x-text="mode === 'UPLOAD' ? 'Upload Local File' : 'External Link'"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <div x-show="sourceMode === 'UPLOAD'" x-transition class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-300">File <span class="text-red-400">*</span></label>
+                        <input type="file" name="file" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer">
+                    </div>
+                    <div x-show="sourceMode === 'LINK'" x-transition x-cloak class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-300">URL <span class="text-red-400">*</span></label>
+                        <input type="url" name="url" placeholder="https://example.com/file.mp4" class="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors placeholder-gray-600">
+                    </div>
+                </div>
+
+                <!-- Cover Image (Optional, hidden for purely visual static image types) -->
+                <div x-show="!['IMG', 'GIF'].includes(assetType)" x-transition class="p-6 bg-indigo-900/10 rounded-xl border border-indigo-500/20">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-indigo-500/20 p-3 rounded-xl border border-indigo-500/30">
+                            <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-indigo-200 mb-1">Cover/Thumbnail Image (Optional)</label>
+                            <p class="text-xs text-indigo-300/70 mb-3">Since this is not a standard image, adding a cover gives it a beautiful representation in the feed.</p>
+                            <input type="file" name="cover_image" accept="image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/20 file:text-indigo-300 hover:file:bg-indigo-500/30 cursor-pointer">
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" class="submit-btn" id="submit-btn">Guardar Recurso Global</button>
+            <!-- Character Selection Container with Search & Selected chips -->
+            <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h3 class="text-xl font-bold text-white">Tag Characters</h3>
+                    <div class="text-xs font-semibold px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
+                        <span x-text="selectedCharacters.length"></span> Selected
+                    </div>
+                </div>
+
+                <!-- Selected Characters Chips -->
+                <div class="flex flex-wrap gap-2 mb-6" x-show="selectedCharacters.length > 0">
+                    <template x-for="char in selectedCharacters" :key="char.id">
+                        <div class="flex items-center gap-2 bg-gray-800 border border-gray-700 py-1.5 pl-2 pr-3 rounded-lg shadow-sm group">
+                            <input type="hidden" name="characters[]" :value="char.id">
+                            <img :src="char.image || 'https://via.placeholder.com/24'" class="w-6 h-6 rounded-md object-cover">
+                            <span class="text-sm font-medium text-gray-200" x-text="char.name"></span>
+                            <button type="button" @click="toggleCharacter(char)" class="text-gray-500 hover:text-red-400 ml-1 focus:outline-none">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Search Tools -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="sm:col-span-1">
+                        <select x-model="searchFranchise" @change="fetchCharacters" class="w-full bg-gray-900 border border-gray-700 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm">
+                            <option value="ALL">All Franchises</option>
+                            @foreach($franchises as $f)
+                                <option value="{{ $f }}">{{ $f }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2 relative">
+                        <input type="text" x-model="searchQuery" @input.debounce.500ms="fetchCharacters" placeholder="Search character by name..." class="w-full bg-gray-900 border border-gray-700 text-white rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder-gray-600 text-sm">
+                        <svg class="w-5 h-5 text-gray-500 absolute left-4 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="relative min-h-[250px] bg-gray-900/50 rounded-xl p-4 border border-gray-800 overflow-y-auto max-h-[350px]">
+                    <div x-show="loading" class="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm rounded-xl">
+                        <svg class="animate-spin h-8 w-8 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+
+                    <div x-show="!loading && searchResults.length === 0" class="text-center text-gray-500 py-10">
+                        <p x-text="searchQuery ? 'No characters found matching query.' : 'Search or filter to load characters.'"></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <template x-for="char in searchResults" :key="char.id">
+                            <label class="flex items-center gap-3 p-3 bg-gray-800 rounded-xl border cursor-pointer hover:bg-gray-750 transition-colors"
+                                :class="isSelected(char.id) ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-gray-700'">
+                                <input type="checkbox" :checked="isSelected(char.id)" @change="toggleCharacter(char)" class="w-4 h-4 rounded appearance-none checked:bg-emerald-500 border-gray-600 bg-gray-900 focus:ring-emerald-500 focus:ring-offset-gray-800">
+                                <img :src="char.image || 'https://via.placeholder.com/40'" class="w-10 h-10 rounded-lg object-cover bg-gray-900">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-white truncate" x-text="char.name"></p>
+                                    <p class="text-xs text-emerald-400 font-semibold truncate" x-show="char.isMain">MAIN</p>
+                                    <p class="text-xs text-gray-500 truncate" x-show="!char.isMain">SECONDARY</p>
+                                </div>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-bold text-lg py-4 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all">
+                Upload & Create Asset
+            </button>
         </form>
     </div>
 
     <script>
-        // Tab Switching
-        function switchTab(type) {
-            document.getElementById('file-area').style.display = type === 'file' ? 'block' : 'none';
-            document.getElementById('url-area').style.display = type === 'url' ? 'block' : 'none';
-            document.getElementById('btn-file').className = 'tab-btn ' + (type === 'file' ? 'active' : '');
-            document.getElementById('btn-url').className = 'tab-btn ' + (type === 'url' ? 'active' : '');
-        }
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('assetForm', () => ({
+                assetType: 'IMG',
+                sourceMode: 'UPLOAD',
+                searchQuery: '',
+                searchFranchise: 'ALL',
+                searchResults: [],
+                selectedCharacters: [],
+                loading: false,
 
-        // Drag & Drop
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const fileName = document.getElementById('file-name');
+                init() {
+                    // Cargar unos iniciales al entrar
+                    this.fetchCharacters();
+                },
 
-        dropZone.addEventListener('click', () => fileInput.click());
+                async fetchCharacters() {
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams();
+                        if (this.searchQuery) params.append('search', this.searchQuery);
+                        if (this.searchFranchise !== 'ALL') params.append('franchise', this.searchFranchise);
 
-        fileInput.addEventListener('change', function() {
-            if (this.files.length > 0) {
-                fileName.textContent = this.files[0].name;
-                fileName.style.color = 'var(--accent)';
-            }
-        });
+                        const res = await fetch(`/api/characters/search?${params.toString()}`);
+                        if (!res.ok) throw new Error('Fetch failed');
+                        this.searchResults = await res.json();
+                    } catch (error) {
+                        console.error("Error fetching characters:", error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+                isSelected(id) {
+                    return this.selectedCharacters.some(c => c.id === id);
+                },
 
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                fileName.textContent = e.dataTransfer.files[0].name;
-                fileName.style.color = 'var(--accent)';
-            }
-        });
-
-        // Filtering
-        const searchInput = document.getElementById('char-search');
-        const franchiseSelect = document.getElementById('franchise-filter');
-        const charLabels = document.querySelectorAll('.char-select-label');
-
-        function filterList() {
-            const term = searchInput.value.toLowerCase();
-            const franchise = franchiseSelect.value;
-
-            charLabels.forEach(label => {
-                const name = label.getAttribute('data-name');
-                const franchises = label.getAttribute('data-franchises').split(',');
-                
-                const matchesSearch = name.includes(term);
-                const matchesFranchise = franchise === 'ALL' || franchises.includes(franchise);
-
-                if (matchesSearch && matchesFranchise) {
-                    label.style.display = 'flex';
-                } else {
-                    label.style.display = 'none';
-                }
-            });
-        }
-
-        searchInput.addEventListener('input', filterList);
-        franchiseSelect.addEventListener('change', filterList);
-
-        // Form submission with Progress tracking
-        document.getElementById('assetForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const form = this;
-            const checked = document.querySelectorAll('input[name="characters[]"]:checked');
-            if (checked.length === 0) {
-                alert('Debes seleccionar al menos un personaje al que pertenecerá este recurso.');
-                return;
-            }
-
-            const formData = new FormData(form);
-            const xhr = new XMLHttpRequest();
-
-            // Mostrar barra de progreso
-            const progressContainer = document.getElementById('progress-container');
-            const progressBar = document.getElementById('progress-bar');
-            const percentText = document.getElementById('percent-text');
-            const statusText = document.getElementById('status-text');
-            const submitBtn = document.getElementById('submit-btn');
-
-            progressContainer.style.display = 'block';
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.5';
-            submitBtn.innerText = 'Subiendo...';
-
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    progressBar.style.width = percent + '%';
-                    percentText.innerText = percent + '%';
-                    if (percent === 100) {
-                        statusText.innerText = 'Procesando en el servidor (esto puede tardar)...';
-                        statusText.style.color = 'var(--accent)';
+                toggleCharacter(char) {
+                    if (this.isSelected(char.id)) {
+                        this.selectedCharacters = this.selectedCharacters.filter(c => c.id !== char.id);
+                    } else {
+                        this.selectedCharacters.push(char);
                     }
                 }
-            });
-
-            xhr.addEventListener('load', function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    // Éxito: Recargar para ver mensaje o redirigir
-                    window.location.reload();
-                } else {
-                    alert('Error en la subida: ' + xhr.statusText);
-                    console.log('Error en la subida: ' + xhr.statusText);
-                    console.log(xhr.responseText);
-                    submitBtn.disabled = false;
-                    submitBtn.style.opacity = '1';
-                }
-            });
-
-            xhr.addEventListener('error', function() {
-                alert('Error de red al intentar subir el archivo.');
-                console.log('Error de red al intentar subir el archivo.')
-                console.log(xhr.responseText);
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-            });
-
-            xhr.open('POST', form.action);
-            xhr.send(formData);
+            }));
         });
     </script>
-</body>
-</html>
+</x-layout>

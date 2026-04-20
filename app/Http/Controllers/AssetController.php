@@ -28,26 +28,7 @@ class AssetController extends Controller
                 $franchises[] = $record->get('name');
             }
 
-            // Obtener personajes con su info de franquicia y si son MAIN
-            $characters = [];
-            $query = '
-                MATCH (c:Character)
-                OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(f:Franchise)
-                WITH c, collect(DISTINCT f.name) as franchises, collect(DISTINCT r.role) as roles
-                WITH c, franchises, CASE WHEN "MAIN" IN roles THEN 1 ELSE 0 END as isMain
-                RETURN c, franchises, isMain
-                ORDER BY isMain DESC, c.name ASC
-            ';
-
-            $result = $client->run($query);
-            foreach ($result as $rec) {
-                $char = $rec->get('c')->getProperties()->toArray();
-                $char['franchises'] = $rec->get('franchises')->toArray();
-                $char['isMain'] = $rec->get('isMain');
-                $characters[] = $char;
-            }
-
-            return view('assets.create', compact('characters', 'franchises'));
+            return view('assets.create', compact('franchises'));
         } catch (Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -59,6 +40,8 @@ class AssetController extends Controller
             'file' => 'nullable|file|max:524288',
             'url' => 'nullable|url|max:500',
             'title' => 'nullable|string|max:255',
+            'asset_type' => 'required|string|in:ANIME,MANGA,LIGHT NOVEL,DOUJIN,WALLPAPER ENGINE,IMG,MUSIC,GIF,AMV',
+            'cover_image' => 'nullable|image|max:10240',
             'characters' => 'required|array|min:1',
             'characters.*' => 'integer'
         ]);
@@ -67,11 +50,12 @@ class AssetController extends Controller
             $client = $this->neo4j->client();
             $assetId = Str::uuid()->toString();
             $title = $request->input('title');
+            $assetType = $request->input('asset_type');
             
             $filename = null;
             $url = $request->input('url');
-            $type = 'URL';
             $mimeType = 'text/html';
+            $coverFilename = null;
 
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
@@ -81,12 +65,19 @@ class AssetController extends Controller
                 $filename = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
                 
                 $file->storeAs('assets', $filename, 'public');
-                $type = strtoupper($extension);
                 if (!$title) $title = pathinfo($originalName, PATHINFO_FILENAME);
             } else if ($url) {
                 if (!$title) $title = parse_url($url, PHP_URL_HOST) ?: 'Enlace Externo';
             } else {
                 return back()->with('error', 'Debes proporcionar un archivo o una URL válida.');
+            }
+
+            if ($request->hasFile('cover_image')) {
+                $coverFile = $request->file('cover_image');
+                $coverExt = $coverFile->getClientOriginalExtension();
+                $coverOriginalName = $coverFile->getClientOriginalName();
+                $coverFilename = time() . '_cover_' . Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME)) . '.' . $coverExt;
+                $coverFile->storeAs('assets/covers', $coverFilename, 'public');
             }
 
             // Preparar lista de IDs casteados rigurosamente a int
@@ -101,9 +92,10 @@ class AssetController extends Controller
                     id: $assetId,
                     title: $title,
                     filename: $filename,
+                    coverFilename: $coverFilename,
                     url: $url,
                     mimeType: $mimeType,
-                    type: $type,
+                    type: $assetType,
                     createdAt: datetime(),
                     visibility: "public"
                 })
@@ -121,9 +113,10 @@ class AssetController extends Controller
                 'assetId' => $assetId,
                 'title' => $title,
                 'filename' => $filename,
+                'coverFilename' => $coverFilename,
                 'url' => $url,
                 'mimeType' => $mimeType,
-                'type' => $type,
+                'assetType' => $assetType,
                 'storageId' => $filename ? "local_storage" : "web_storage",
                 'storageName' => $filename ? "Local Server" : "External Web",
                 'storageType' => $filename ? "LOCAL" : "REMOTE",

@@ -22,6 +22,7 @@ Route::get('/neo4j', [Neo4jController::class, 'index'])->name('neo4j.index');
 Route::get('/neo4j/data', [Neo4jController::class, 'graphData'])->name('neo4j.data');
 
 Route::get('/characters', [CharacterController::class, 'index'])->name('characters.index');
+Route::get('/api/characters/search', [CharacterController::class, 'searchJson'])->name('api.characters.search');
 Route::get('/characters/{id}', [CharacterController::class, 'show'])->name('characters.show');
 Route::post('/characters/{id}/assets', [CharacterController::class, 'storeAsset'])->name('characters.assets.store');
 

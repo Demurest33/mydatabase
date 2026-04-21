@@ -79,7 +79,7 @@ class FranchiseController extends Controller
                      count(DISTINCT m) as mediaCount, 
                      count(DISTINCT c) as charactersCount,
                      count(DISTINCT a) as assetsCount,
-                     collect(DISTINCT m.coverImageExtraLarge)[0] as coverImage,
+                     coalesce(f.image, collect(DISTINCT m.coverImage)[0]) as coverImage,
                      collect(DISTINCT m.format)[0] as primaryFormat
                 RETURN f, mediaCount, charactersCount, assetsCount, coverImage, primaryFormat
                 $orderStr

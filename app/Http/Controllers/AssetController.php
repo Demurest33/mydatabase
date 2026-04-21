@@ -100,12 +100,7 @@ class AssetController extends Controller
         try {
             $client = $this->neo4j->client();
 
-            // Obtener todas las franquicias para el filtro
-            $franchises = [];
-            $res = $client->run('MATCH (f:Franchise) RETURN f.name as name ORDER BY f.name ASC');
-            foreach ($res as $record) {
-                $franchises[] = $record->get('name');
-            }
+            $franchises = app(\App\Actions\GetFranchiseNamesAction::class)->execute();
 
             return view('assets.create', compact('franchises'));
         } catch (Exception $e) {
@@ -113,7 +108,7 @@ class AssetController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Actions\CreateAssetAction $createAssetAction)
     {
         $request->validate([
             'file' => 'nullable|file|max:524288',
@@ -126,84 +121,18 @@ class AssetController extends Controller
         ]);
 
         try {
-            $client = $this->neo4j->client();
-            $assetId = Str::uuid()->toString();
-            $title = $request->input('title');
-            $assetType = $request->input('asset_type');
-            
-            $filename = null;
-            $url = $request->input('url');
-            $mimeType = 'text/html';
-            $coverFilename = null;
-
-            if ($request->hasFile('file')) {
-                $file = $request->file('file');
-                $originalName = $file->getClientOriginalName();
-                $mimeType = $file->getMimeType();
-                $extension = $file->getClientOriginalExtension();
-                $filename = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
-                
-                $file->storeAs('assets', $filename, 'public');
-                if (!$title) $title = pathinfo($originalName, PATHINFO_FILENAME);
-            } else if ($url) {
-                if (!$title) $title = parse_url($url, PHP_URL_HOST) ?: 'Enlace Externo';
-            } else {
-                return back()->with('error', 'Debes proporcionar un archivo o una URL válida.');
-            }
-
-            if ($request->hasFile('cover_image')) {
-                $coverFile = $request->file('cover_image');
-                $coverExt = $coverFile->getClientOriginalExtension();
-                $coverOriginalName = $coverFile->getClientOriginalName();
-                $coverFilename = time() . '_cover_' . Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME)) . '.' . $coverExt;
-                $coverFile->storeAs('assets/covers', $coverFilename, 'public');
-            }
-
-            // Preparar lista de IDs casteados rigurosamente a int
             $characterIds = array_values(array_unique(array_map('intval', $request->input('characters', []))));
 
-            // Crear Nodo Asset y relacionarlo con TODOS los personajes
-            $query = '
-                MERGE (st:Storage {id: $storageId})
-                ON CREATE SET st.name = $storageName, st.type = $storageType, st.basePath = $basePath, st.driver = $driver
-                
-                CREATE (a:Asset {
-                    id: $assetId,
-                    title: $title,
-                    filename: $filename,
-                    coverFilename: $coverFilename,
-                    url: $url,
-                    mimeType: $mimeType,
-                    type: $assetType,
-                    createdAt: datetime(),
-                    visibility: "public"
-                })
-                CREATE (a)-[:STORED_IN]->(st)
-                
-                WITH a, $characterIds as listIds
-                UNWIND listIds as charId
-                MATCH (c:Character {id: charId})
-                CREATE (c)-[:HAS_ASSET]->(a)
-                RETURN count(c)
-            ';
+            $count = $createAssetAction->execute(
+                $request->file('file'),
+                $request->input('url'),
+                $request->input('title'),
+                $request->input('asset_type'),
+                $request->file('cover_image'),
+                $characterIds
+            );
 
-            $client->run($query, [
-                'characterIds' => $characterIds,
-                'assetId' => $assetId,
-                'title' => $title,
-                'filename' => $filename,
-                'coverFilename' => $coverFilename,
-                'url' => $url,
-                'mimeType' => $mimeType,
-                'assetType' => $assetType,
-                'storageId' => $filename ? "local_storage" : "web_storage",
-                'storageName' => $filename ? "Local Server" : "External Web",
-                'storageType' => $filename ? "LOCAL" : "REMOTE",
-                'basePath' => $filename ? "/storage/assets" : "",
-                'driver' => $filename ? "local" : "url"
-            ]);
-
-            return back()->with('success', 'Recurso centralizado creado y vinculado a ' . count($characterIds) . ' personajes.');
+            return back()->with('success', 'Recurso centralizado creado y vinculado a ' . $count . ' personajes.');
 
         } catch (Exception $e) {
             return back()->with('error', 'Error: ' . $e->getMessage());

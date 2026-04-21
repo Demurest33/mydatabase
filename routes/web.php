@@ -6,12 +6,11 @@ use App\Http\Controllers\Neo4jController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\FranchiseController;
+use App\Http\Controllers\WouldYouRatherController;
 
 Route::get('/', [AssetController::class, 'index'])->name('home');
 
 Route::get('/anilist', [AnilistController::class, 'index'])->name('anilist.index');
-
-use App\Http\Controllers\WouldYouRatherController;
 Route::get('/would-you-rather', [WouldYouRatherController::class, 'index'])->name('wyr.index');
 Route::post('/would-you-rather/fetch', [WouldYouRatherController::class, 'fetch'])->name('wyr.fetch');
 Route::get('/would-you-rather/game', [WouldYouRatherController::class, 'game'])->name('wyr.game');

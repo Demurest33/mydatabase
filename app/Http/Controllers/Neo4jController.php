@@ -23,14 +23,10 @@ class Neo4jController extends Controller
         $search = $request->input('franchise');
 
         try {
-            $client = $this->neo4j->client();
-            
-            $result = $client->run('MATCH (f:Franchise) RETURN f.name AS name');
-            foreach ($result as $record) {
-                $franchises[] = $record->get('name');
-            }
+            $franchises = app(\App\Actions\GetFranchiseNamesAction::class)->execute();
 
             if ($search) {
+                $client = $this->neo4j->client();
                 $query = '
                     MATCH (f:Franchise {name: $name})-[:HAS_ENTRY]->(m:Media)
                     OPTIONAL MATCH (m)-[:PRODUCED_BY]->(s:Studio)

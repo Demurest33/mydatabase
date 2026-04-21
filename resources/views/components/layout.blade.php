@@ -20,6 +20,8 @@
     <!-- Navbar Component -->
     <x-navbar />
 
+    {{ $banner ?? '' }}
+
     <!-- Main Content Wrapper -->
     <main class="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative z-10">
         {{ $slot }}

@@ -116,12 +116,19 @@ class AssetController extends Controller
             'title' => 'nullable|string|max:255',
             'asset_type' => 'required|string|in:ANIME,MANGA,LIGHT NOVEL,DOUJIN,WALLPAPER ENGINE,IMG,MUSIC,GIF,AMV',
             'cover_image' => 'nullable|image|max:10240',
-            'characters' => 'required|array|min:1',
-            'characters.*' => 'integer'
+            'characters' => 'nullable|array',
+            'characters.*' => 'integer',
+            'media' => 'nullable|array',
+            'media.*' => 'integer',
         ]);
 
         try {
             $characterIds = array_values(array_unique(array_map('intval', $request->input('characters', []))));
+            $mediaIds = array_values(array_unique(array_map('intval', $request->input('media', []))));
+
+            if (empty($characterIds) && empty($mediaIds)) {
+                return back()->with('error', 'Debes vincular el recurso al menos a un personaje o a una obra (media).');
+            }
 
             $count = $createAssetAction->execute(
                 $request->file('file'),
@@ -129,10 +136,11 @@ class AssetController extends Controller
                 $request->input('title'),
                 $request->input('asset_type'),
                 $request->file('cover_image'),
-                $characterIds
+                $characterIds,
+                $mediaIds
             );
 
-            return back()->with('success', 'Recurso centralizado creado y vinculado a ' . $count . ' personajes.');
+            return back()->with('success', 'Recurso centralizado creado y vinculado a ' . $count . ' elementos en el grafo.');
 
         } catch (Exception $e) {
             return back()->with('error', 'Error: ' . $e->getMessage());

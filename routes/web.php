@@ -18,6 +18,9 @@ Route::get('/would-you-rather/progress/{batchId}', [WouldYouRatherController::cl
 
 Route::get('/neo4j', [Neo4jController::class, 'index'])->name('neo4j.index');
 Route::get('/neo4j/data', [Neo4jController::class, 'graphData'])->name('neo4j.data');
+Route::get('/api/media/search', [Neo4jController::class, 'searchMediaJson'])->name('api.media.search');
+
+Route::get('/media/{id}', [\App\Http\Controllers\MediaController::class, 'show'])->name('media.show');
 
 Route::get('/characters', [CharacterController::class, 'index'])->name('characters.index');
 Route::get('/api/characters/search', [CharacterController::class, 'searchJson'])->name('api.characters.search');

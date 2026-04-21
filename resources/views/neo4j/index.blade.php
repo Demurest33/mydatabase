@@ -104,7 +104,7 @@
                                 <!-- Dot -->
                                 <div class="absolute -left-[31px] md:-left-[39px] top-6 w-3 h-3 md:w-4 md:h-4 rounded-full bg-indigo-500 border-4 border-[#0f172a] shadow-[0_0_10px_rgba(99,102,241,0.6)] group-hover:scale-125 transition-transform z-10"></div>
                                 
-                                <div class="bg-[#151921] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row gap-6 shadow-sm hover:shadow-lg hover:border-indigo-500/30 transition-all">
+                                <a href="{{ route('media.show', $item['id']) }}" class="bg-[#151921] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row gap-6 shadow-sm hover:shadow-lg hover:border-indigo-500/30 hover:-translate-y-1 transition-all block">
                                     <div class="w-24 md:w-32 shrink-0 relative rounded-lg overflow-hidden border border-gray-800 aspect-[2/3]">
                                         <img src="{{ $item['coverImage']['large'] }}" class="w-full h-full object-cover">
                                         <div class="absolute top-0 left-0 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 uppercase rounded-br-lg">{{ $item['startDate']['year'] ?? 'TBA' }}</div>
@@ -135,7 +135,7 @@
                                             </div>
                                         @endif
                                     </div>
-                                </div>
+                                </a>
                             </div>
                         @endforeach
                     </div>
@@ -155,20 +155,20 @@
                             $relations = array_merge($franchiseData['source'], $franchiseData['others']); 
                         @endphp
                         @foreach($relations as $item)
-                            <div class="group relative rounded-xl overflow-hidden bg-gray-900 border border-gray-800 transition-all hover:border-indigo-500">
+                            <a href="{{ route('media.show', $item['id']) }}" class="group relative rounded-xl overflow-hidden bg-gray-900 border border-gray-800 transition-all hover:border-indigo-500 hover:-translate-y-1 hover:shadow-xl block">
                                 @if(in_array($item, $franchiseData['source']))
-                                    <span class="absolute top-0 inset-x-0 z-10 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black text-[9px] font-black tracking-wider uppercase text-center py-1">Source</span>
+                                    <span class="absolute top-0 inset-x-0 z-10 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black text-[9px] font-black tracking-wider uppercase text-center py-1 border-b border-black/20">Source</span>
                                 @else
-                                    <span class="absolute top-0 inset-x-0 z-10 bg-gradient-to-r from-gray-700 to-gray-600 text-white text-[9px] font-black tracking-wider uppercase text-center py-1">Alternative</span>
+                                    <span class="absolute top-0 inset-x-0 z-10 bg-gradient-to-r from-gray-700 to-gray-600 text-white text-[9px] font-black tracking-wider uppercase text-center py-1 border-b border-black/20">Alternative</span>
                                 @endif
                                 
-                                <div class="aspect-[2/3] overflow-hidden">
+                                <div class="aspect-[2/3] overflow-hidden bg-black">
                                     <img src="{{ $item['coverImage']['large'] }}" alt="" class="w-full h-full object-cover transition-transform group-hover:scale-105 opacity-90 group-hover:opacity-100 mt-4">
                                 </div>
                                 <div class="p-3 absolute bottom-0 inset-x-0 bg-gradient-to-t from-gray-950 via-gray-900/90 to-transparent pt-10 pb-2">
                                     <h4 class="text-[11px] font-bold text-gray-300 line-clamp-2 leading-tight group-hover:text-indigo-400">{{ $item['title']['romaji'] }}</h4>
                                 </div>
-                            </div>
+                            </a>
                         @endforeach
                     </div>
                 </div>

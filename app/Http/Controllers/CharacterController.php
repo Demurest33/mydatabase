@@ -55,11 +55,6 @@ class CharacterController extends Controller
         try {
             $client = $this->neo4j->client();
             
-            $query = '
-                MATCH (c:Character)
-                OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(f:Franchise)
-            ';
-            
             $where = [];
             $params = [];
 
@@ -67,21 +62,34 @@ class CharacterController extends Controller
                 $where[] = '(toLower(c.name) CONTAINS toLower($search) OR c.id = $search)';
                 $params['search'] = $search;
             }
-
             if ($franchise && $franchise !== 'ALL') {
-                $where[] = 'f.name = $franchise';
                 $params['franchise'] = $franchise;
             }
 
-            if (count($where) > 0) {
-                $query .= ' WHERE ' . implode(' AND ', $where);
+            $query = '';
+            
+            // Scope limit MUST be a strict MATCH to filter out unwanted root nodes.
+            if ($franchise && $franchise !== 'ALL') {
+                $query .= 'MATCH (f:Franchise {name: $franchise})-[:HAS_ENTRY]->(:Media)-[:HAS_CHARACTER]->(c:Character) ';
+                if (count($where) > 0) {
+                    $query .= ' WHERE ' . implode(' AND ', $where);
+                }
+                $query .= ' WITH DISTINCT c '; // Group to avoid duplication before fetching their holistic attributes
+                $query .= ' OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(allF:Franchise) ';
+            } else {
+                $query .= 'MATCH (c:Character) ';
+                if (count($where) > 0) {
+                    $query .= ' WHERE ' . implode(' AND ', $where);
+                }
+                $query .= ' OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(allF:Franchise) ';
             }
 
             $query .= '
-                WITH c, collect(DISTINCT f.name) as franchises, collect(DISTINCT r.role) as roles
-                WITH c, franchises, CASE WHEN "MAIN" IN roles THEN 1 ELSE 0 END as isMain
-                RETURN c, franchises, isMain
-                ORDER BY isMain DESC, c.name ASC
+                OPTIONAL MATCH (c)-[:HAS_ASSET]->(a:Asset)
+                WITH c, count(DISTINCT a) as assetCount, collect(DISTINCT allF.name) as franchises, collect(DISTINCT r.role) as roles
+                WITH c, assetCount, franchises, CASE WHEN "MAIN" IN roles THEN 1 ELSE 0 END as isMain
+                RETURN c, franchises, isMain, assetCount
+                ORDER BY assetCount DESC, isMain DESC, c.name ASC
                 LIMIT 50
             ';
             

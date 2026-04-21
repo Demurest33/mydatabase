@@ -22,7 +22,8 @@ class CreateAssetAction
         ?string $title,
         string $assetType,
         ?UploadedFile $coverImage,
-        array $characterIds
+        array $characterIds,
+        array $mediaIds = []
     ): int {
         $client = $this->neo4j->client();
         $assetId = Str::uuid()->toString();
@@ -56,7 +57,7 @@ class CreateAssetAction
             $coverImage->storeAs('assets/covers', $coverFilename, 'public');
         }
 
-        // Crear Nodo Asset y relacionarlo con TODOS los personajes
+        // Crear Nodo Asset
         $query = '
             MERGE (st:Storage {id: $storageId})
             ON CREATE SET st.name = $storageName, st.type = $storageType, st.basePath = $basePath, st.driver = $driver
@@ -73,16 +74,9 @@ class CreateAssetAction
                 visibility: "public"
             })
             CREATE (a)-[:STORED_IN]->(st)
-            
-            WITH a, $characterIds as listIds
-            UNWIND listIds as charId
-            MATCH (c:Character {id: charId})
-            CREATE (c)-[:HAS_ASSET]->(a)
-            RETURN count(c)
         ';
 
         $client->run($query, [
-            'characterIds' => $characterIds,
             'assetId' => $assetId,
             'title' => $title,
             'filename' => $filename,
@@ -97,6 +91,28 @@ class CreateAssetAction
             'driver' => $filename ? "local" : "url"
         ]);
 
-        return count($characterIds);
+        $linkedCount = 0;
+
+        if (!empty($characterIds)) {
+            $client->run('
+                UNWIND $ids as charId
+                MATCH (a:Asset {id: $assetId})
+                MATCH (c:Character {id: toInteger(charId)})
+                MERGE (c)-[:HAS_ASSET]->(a)
+            ', ['ids' => $characterIds, 'assetId' => $assetId]);
+            $linkedCount += count($characterIds);
+        }
+
+        if (!empty($mediaIds)) {
+            $client->run('
+                UNWIND $ids as mId
+                MATCH (a:Asset {id: $assetId})
+                MATCH (m:Media {id: toInteger(mId)})
+                MERGE (m)-[:HAS_ASSET]->(a)
+            ', ['ids' => $mediaIds, 'assetId' => $assetId]);
+            $linkedCount += count($mediaIds);
+        }
+
+        return $linkedCount;
     }
 }

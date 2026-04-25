@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Cache\CacheKeys;
 use App\DTOs\MediaDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
+use Illuminate\Support\Facades\Cache;
 
 class MediaCrudController extends Controller
 {
@@ -90,6 +92,7 @@ class MediaCrudController extends Controller
         ';
 
         $client->run($query, $params);
+        Cache::forgetMultiple(CacheKeys::onMediaChange($params['franchise_name']));
 
         return redirect()->route('admin.media.index')->with('success', 'Media created successfully.');
     }
@@ -158,6 +161,8 @@ class MediaCrudController extends Controller
             ]
         );
 
+        Cache::forgetMultiple(CacheKeys::onMediaChange($request->input('franchise_name')));
+
         return redirect()->route('admin.media.index')->with('success', 'Media updated successfully.');
     }
 
@@ -168,6 +173,7 @@ class MediaCrudController extends Controller
             'MATCH (m:Media {id: $id}) DETACH DELETE m',
             ['id' => (int) $id]
         );
+        Cache::forgetMultiple(CacheKeys::onMediaChange());
 
         return redirect()->route('admin.media.index')->with('success', 'Media deleted successfully.');
     }

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Cache\CacheKeys;
 use App\DTOs\AppearanceDTO;
 use App\DTOs\AssetDTO;
 use App\DTOs\CharacterDTO;
 use App\DTOs\MediaDTO;
 use App\Services\Neo4jService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class CharacterController extends Controller
@@ -22,6 +24,28 @@ class CharacterController extends Controller
     // ── Public index (grouped by franchise / role) ───────────────────────────
 
     public function index()
+    {
+        $raw = Cache::remember(CacheKeys::CHARACTERS_GROUPED, CacheKeys::TTL_LONG, function () {
+            return $this->buildCharacterGroupsRaw();
+        });
+
+        // Hydrate DTOs outside the cache closure — DTOs must never be serialized
+        $grouped = [];
+        foreach ($raw['grouped'] as $franchise => $roles) {
+            foreach ($roles as $role => $chars) {
+                $grouped[$franchise][$role] = array_map(fn($d) => CharacterDTO::from($d), $chars);
+            }
+        }
+        $franchiseMedia = [];
+        foreach ($raw['franchiseMedia'] as $franchise => $items) {
+            $franchiseMedia[$franchise] = array_map(fn($d) => (object) $d, $items);
+        }
+
+        return view('characters.index', compact('grouped', 'franchiseMedia'));
+    }
+
+    /** Returns plain arrays only — no DTOs — safe to serialize in any cache driver. */
+    private function buildCharacterGroupsRaw(): array
     {
         try {
             $client = $this->neo4j->client();
@@ -51,37 +75,36 @@ class CharacterController extends Controller
                     $mediaId   = (string) ($app['mediaId'] ?? '');
                     if (!$franchise || !$mediaId) continue;
 
-                    $apps[] = AppearanceDTO::from([
+                    $apps[] = [
                         'mediaId'    => $mediaId,
                         'mediaTitle' => (string) ($app['mediaTitle'] ?? ''),
                         'role'       => (string) ($app['role']       ?? 'UNKNOWN'),
                         'franchise'  => (string) $franchise,
-                    ]);
+                    ];
 
-                    $franchiseMedia[$franchise][$mediaId] ??= (object) [
+                    $franchiseMedia[$franchise][$mediaId] ??= [
                         'id'    => $mediaId,
                         'title' => (string) ($app['mediaTitle'] ?? ''),
                     ];
                 }
 
                 if (empty($apps)) {
-                    $char = CharacterDTO::from($props);
-                    $grouped['Sin franquicia']['UNKNOWN'][] = $char;
+                    $grouped['Sin franquicia']['UNKNOWN'][] = $props;
                     continue;
                 }
 
-                usort($apps, fn(AppearanceDTO $a, AppearanceDTO $b) =>
-                    ($roleOrder[$a->role] ?? 99) <=> ($roleOrder[$b->role] ?? 99)
+                usort($apps, fn($a, $b) =>
+                    ($roleOrder[$a['role']] ?? 99) <=> ($roleOrder[$b['role']] ?? 99)
                 );
 
-                $primary = $apps[0];
-                $char    = CharacterDTO::from($props + [
-                    'mediaIds'   => array_values(array_unique(array_map(fn(AppearanceDTO $a) => $a->mediaId, $apps))),
-                    'mediaTitle' => $primary->mediaTitle,
-                    'role'       => $primary->role,
-                ]);
+                $primary   = $apps[0];
+                $charRow   = $props + [
+                    'mediaIds'   => array_values(array_unique(array_column($apps, 'mediaId'))),
+                    'mediaTitle' => $primary['mediaTitle'],
+                    'role'       => $primary['role'],
+                ];
 
-                $grouped[$primary->franchise][$primary->role][] = $char;
+                $grouped[$primary['franchise']][$primary['role']][] = $charRow;
             }
 
             ksort($grouped);
@@ -91,12 +114,11 @@ class CharacterController extends Controller
                 $items = array_values($items);
             }
 
-        } catch (Exception $e) {
-            $grouped        = [];
-            $franchiseMedia = [];
-        }
+            return compact('grouped', 'franchiseMedia');
 
-        return view('characters.index', compact('grouped', 'franchiseMedia'));
+        } catch (Exception $e) {
+            return ['grouped' => [], 'franchiseMedia' => []];
+        }
     }
 
     // ── Character detail ─────────────────────────────────────────────────────

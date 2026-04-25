@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Cache\CacheKeys;
 use App\DTOs\FranchiseDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
+use Illuminate\Support\Facades\Cache;
 
 class FranchiseCrudController extends Controller
 {
@@ -62,6 +64,9 @@ class FranchiseCrudController extends Controller
 
         $client->run('CREATE (f:Franchise {name: $name})', ['name' => $request->input('name')]);
 
+        Cache::forget('franchises.genres');
+        Cache::forgetMultiple(CacheKeys::onFranchiseChange($request->input('name')));
+
         return redirect()->route('admin.franchises.index')->with('success', 'Franchise created successfully.');
     }
 
@@ -79,10 +84,17 @@ class FranchiseCrudController extends Controller
     {
         $request->validate(['name' => 'required|string|max:255']);
 
+        $newName = $request->input('name');
         $this->neo4j->client()->run(
             'MATCH (f:Franchise {name: $old}) SET f.name = $new',
-            ['old' => $name, 'new' => $request->input('name')]
+            ['old' => $name, 'new' => $newName]
         );
+
+        Cache::forget('franchises.genres');
+        Cache::forgetMultiple(array_unique(array_merge(
+            CacheKeys::onFranchiseChange($name),
+            CacheKeys::onFranchiseChange($newName)
+        )));
 
         return redirect()->route('admin.franchises.index')->with('success', 'Franchise renamed successfully.');
     }
@@ -93,6 +105,9 @@ class FranchiseCrudController extends Controller
             'MATCH (f:Franchise {name: $name}) DETACH DELETE f',
             ['name' => $name]
         );
+
+        Cache::forget('franchises.genres');
+        Cache::forgetMultiple(CacheKeys::onFranchiseChange($name));
 
         return redirect()->route('admin.franchises.index')->with('success', 'Franchise deleted.');
     }

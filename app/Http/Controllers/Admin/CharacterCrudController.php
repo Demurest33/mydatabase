@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Cache\CacheKeys;
 use App\DTOs\AppearanceDTO;
 use App\DTOs\CharacterDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
+use Illuminate\Support\Facades\Cache;
 
 class CharacterCrudController extends Controller
 {
@@ -136,6 +138,7 @@ class CharacterCrudController extends Controller
         ';
 
         $client->run($query, $params);
+        Cache::forgetMultiple(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character created successfully.');
     }
@@ -197,6 +200,8 @@ class CharacterCrudController extends Controller
             ]
         );
 
+        Cache::forgetMultiple(CacheKeys::onCharacterChange());
+
         return redirect()->route('admin.characters.index')->with('success', 'Character updated successfully.');
     }
 
@@ -207,6 +212,7 @@ class CharacterCrudController extends Controller
             'MATCH (c:Character {id: $id}) DETACH DELETE c',
             ['id' => (int) $id]
         );
+        Cache::forgetMultiple(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character deleted successfully.');
     }

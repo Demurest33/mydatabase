@@ -3,6 +3,10 @@
 
     @if(isset($franchiseData) && !empty($franchiseData['root']))
     
+    @push('scripts')
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @endpush
+    
     <x-slot:banner>
         <div class="absolute top-0 inset-x-0 h-[450px] overflow-hidden pointer-events-none" style="z-index: 0;">
             <!-- Background Image -->
@@ -189,17 +193,87 @@
                         })->take(12);
                     @endphp
                     @foreach($rootChars as $char)
-                        <div class="bg-[#151921] border border-white/5 rounded-lg overflow-hidden flex flex-col items-center p-3 hover:border-indigo-500/50 transition-colors group text-center">
+                        <a href="{{ route('characters.show', $char['node']['id']) }}" class="bg-[#151921] border border-white/5 rounded-lg overflow-hidden flex flex-col items-center p-3 hover:border-indigo-500/50 transition-colors group text-center block">
                             <img src="{{ $char['node']['image']['large'] }}" class="w-16 h-16 rounded-full object-cover mb-3 border-2 border-gray-800 group-hover:border-indigo-500 transition-colors">
                             <h5 class="text-xs font-bold text-gray-200 line-clamp-1 w-full">{{ $char['node']['name']['full'] }}</h5>
                             <span class="text-[9px] font-black text-indigo-400/80 uppercase mt-1">{{ $char['role'] }}</span>
-                        </div>
+                        </a>
                     @endforeach
                 </div>
             </div>
             @endif
 
         </div>
+
+        @php
+            $allCharactersList = [];
+            $seenIds = [];
+            
+            $checkMedia = function($mediaList) use (&$allCharactersList, &$seenIds) {
+                foreach ($mediaList as $item) {
+                    if (!empty($item['characters']['edges'])) {
+                        foreach ($item['characters']['edges'] as $edge) {
+                            $id = $edge['node']['id'] ?? null;
+                            if ($id && !isset($seenIds[$id])) {
+                                $seenIds[$id] = true;
+                                $allCharactersList[] = [
+                                    'id' => $id,
+                                    'name' => $edge['node']['name']['full'] ?? 'Unknown',
+                                    'image' => $edge['node']['image']['large'] ?? '',
+                                    'role' => $edge['role']
+                                ];
+                            }
+                        }
+                    }
+                }
+            };
+            
+            $checkMedia($franchiseData['timeline']);
+            $checkMedia($franchiseData['source']);
+            $checkMedia($franchiseData['others']);
+            
+            usort($allCharactersList, function($a, $b) {
+                if ($a['role'] === 'MAIN' && $b['role'] !== 'MAIN') return -1;
+                if ($b['role'] === 'MAIN' && $a['role'] !== 'MAIN') return 1;
+                return strnatcmp($a['name'], $b['name']);
+            });
+        @endphp
+
+        <!-- ALL CHARACTERS SECTION (SEARCHABLE) -->
+        @if(count($allCharactersList) > 0)
+        <div class="mt-16 bg-[#151921]/40 border border-white/5 rounded-2xl p-8" x-data="{ search: '' }">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-gray-800 pb-6">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <svg class="w-7 h-7 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    All Characters ({{ count($allCharactersList) }})
+                </h3>
+                
+                <div class="relative w-full md:w-72">
+                    <input x-model="search" type="text" placeholder="Search character..." class="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                    <svg class="w-5 h-5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                @foreach($allCharactersList as $char)
+                    <a href="{{ route('characters.show', $char['id']) }}" 
+                       x-show="search === '' || '{{ strtolower(addslashes($char['name'])) }}'.includes(search.toLowerCase())"
+                       class="bg-[#11151d] border border-gray-800 rounded-xl overflow-hidden hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-lg group flex flex-col">
+                        <div class="aspect-[3/4] relative overflow-hidden bg-gray-900">
+                            <img src="{{ $char['image'] }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                            @if($char['role'] === 'MAIN')
+                                <div class="absolute top-0 right-0 bg-indigo-600 text-[9px] font-black uppercase px-2 py-0.5 rounded-bl text-white shadow-sm">MAIN</div>
+                            @endif
+                        </div>
+                        <div class="p-3 text-center flex-1 flex flex-col justify-center">
+                            <h4 class="text-[11px] font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors">{{ $char['name'] }}</h4>
+                            <span class="text-[9px] font-black text-indigo-400/80 uppercase mt-1 block">{{ $char['role'] }}</span>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+        @endif
 
     @elseif($search)
         <!-- Loading or Not Found State -->

@@ -16,7 +16,7 @@ class AssetController extends Controller
         $this->neo4j = $neo4j;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
             $client = $this->neo4j->client();
@@ -41,14 +41,22 @@ class AssetController extends Controller
 
             // Fetch the latest assets
             $assets = [];
-            $query = '
-                MATCH (a:Asset)
+            $query = 'MATCH (a:Asset) ';
+            $params = [];
+
+            $typeFilter = $request->query('type');
+            if ($typeFilter) {
+                $query .= 'WHERE a.type = $type ';
+                $params['type'] = $typeFilter;
+            }
+
+            $query .= '
                 OPTIONAL MATCH (c:Character)-[:HAS_ASSET]->(a)
                 RETURN a, count(c) as charactersCount
                 ORDER BY a.createdAt DESC
                 LIMIT 50
             ';
-            $resAssets = $client->run($query);
+            $resAssets = $client->run($query, $params);
             foreach ($resAssets as $rec) {
                 $a = $rec->get('a')->getProperties()->toArray();
                 

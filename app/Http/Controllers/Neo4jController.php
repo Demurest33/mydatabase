@@ -88,6 +88,7 @@ class Neo4jController extends Controller
                                 return [
                                     'role' => $charEdge['role'],
                                     'node' => [
+                                        'id' => $cProps['id'] ?? null,
                                         'name' => ['full' => $cProps['name']],
                                         'image' => ['large' => $cProps['image'] ?? '']
                                     ]

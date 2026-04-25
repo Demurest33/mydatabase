@@ -33,7 +33,7 @@
                     $bgImg = $categoryImages[$catName] ?? $categoryImages['DEFAULT'];
                     $colorClass = $categoryColors[$catName] ?? $categoryColors['DEFAULT'];
                 @endphp
-                <a href="#" class="relative overflow-hidden rounded-xl w-32 h-20 group">
+                <a href="{{ route('home', ['type' => $category['name']]) }}" class="relative overflow-hidden rounded-xl w-32 h-20 group {{ request('type') === $category['name'] ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-900' : '' }}">
                     <div class="absolute inset-0 {{ $colorClass }} mix-blend-multiply z-10 transition-colors"></div>
                     <img src="{{ $bgImg }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="{{ $catName }}">
                     <div class="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-2 text-center">
@@ -50,10 +50,18 @@
 
     <!-- Feed Header -->
     <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            Most Viral
-            <svg class="w-5 h-5 text-gray-400 cursor-pointer hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </h2>
+        <div class="flex items-center gap-4">
+            <h2 class="text-xl font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                {{ request('type') ? strtoupper(request('type')) . ' Assets' : 'Most Viral' }}
+                <svg class="w-5 h-5 text-gray-400 cursor-pointer hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </h2>
+            @if(request('type'))
+                <a href="{{ route('home') }}" class="text-xs bg-red-500/20 text-red-400 hover:bg-red-500/40 hover:text-red-300 px-3 py-1 rounded-full transition-colors flex items-center gap-1 font-semibold uppercase tracking-wide">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    Clear Filter
+                </a>
+            @endif
+        </div>
         <div class="flex gap-4">
             <button class="text-gray-400 hover:text-white uppercase text-sm font-semibold tracking-wider flex items-center gap-1">
                 Newest

@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Create Media - Backoffice</x-slot>
 
     <div class="mb-8 flex items-center justify-between">
@@ -107,4 +107,4 @@
             </div>
         </form>
     </div>
-</x-layout>
+</x-admin-layout>

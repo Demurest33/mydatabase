@@ -20,25 +20,30 @@ class FranchiseCrudController extends Controller
 
     public function index()
     {
-        $client = $this->neo4j->client();
-        $result = $client->run(
-            'MATCH (f:Franchise)
-             OPTIONAL MATCH (f)-[:HAS_ENTRY]->(m:Media)
-             OPTIONAL MATCH (m)-[:HAS_CHARACTER]->(c:Character)
-             RETURN f.name AS name,
-                    count(DISTINCT m) AS mediaCount,
-                    count(DISTINCT c) AS characterCount
-             ORDER BY f.name ASC'
-        );
+        $rows = Cache::remember(CacheKeys::ADMIN_FRANCHISES_INDEX, CacheKeys::TTL_LONG, function () {
+            $client = $this->neo4j->client();
+            $result = $client->run(
+                'MATCH (f:Franchise)
+                 OPTIONAL MATCH (f)-[:HAS_ENTRY]->(m:Media)
+                 OPTIONAL MATCH (m)-[:HAS_CHARACTER]->(c:Character)
+                 RETURN f.name AS name,
+                        count(DISTINCT m) AS mediaCount,
+                        count(DISTINCT c) AS characterCount
+                 ORDER BY f.name ASC'
+            );
 
-        $franchises = [];
-        foreach ($result as $record) {
-            $franchises[] = FranchiseDTO::from([
-                'name'           => $record->get('name'),
-                'mediaCount'     => (int) $record->get('mediaCount'),
-                'characterCount' => (int) $record->get('characterCount'),
-            ]);
-        }
+            $rows = [];
+            foreach ($result as $record) {
+                $rows[] = [
+                    'name'           => $record->get('name'),
+                    'mediaCount'     => (int) $record->get('mediaCount'),
+                    'characterCount' => (int) $record->get('characterCount'),
+                ];
+            }
+            return $rows;
+        });
+
+        $franchises = array_map(fn($r) => FranchiseDTO::from($r), $rows);
 
         return view('admin.franchises.index', compact('franchises'));
     }

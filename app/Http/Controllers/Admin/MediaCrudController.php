@@ -20,21 +20,30 @@ class MediaCrudController extends Controller
 
     public function index()
     {
-        $client = $this->neo4j->client();
-        $result = $client->run(
-            'MATCH (m:Media)
-             OPTIONAL MATCH (f:Franchise)-[:HAS_ENTRY]->(m)
-             RETURN m, f.name AS franchise
-             ORDER BY franchise ASC, m.format ASC, m.title ASC'
-        );
+        $raw = Cache::remember(CacheKeys::ADMIN_MEDIA_GROUPED, CacheKeys::TTL_LONG, function () {
+            $client = $this->neo4j->client();
+            $result = $client->run(
+                'MATCH (m:Media)
+                 OPTIONAL MATCH (f:Franchise)-[:HAS_ENTRY]->(m)
+                 RETURN m, f.name AS franchise
+                 ORDER BY franchise ASC, m.format ASC, m.title ASC'
+            );
+
+            $grouped = [];
+            foreach ($result as $record) {
+                $props     = $record->get('m')->getProperties()->toArray();
+                $franchise = $record->get('franchise') ?? 'Sin franquicia';
+                $format    = $props['format'] ?? 'UNKNOWN';
+                $grouped[$franchise][$format][] = $props;
+            }
+            return $grouped;
+        });
 
         $grouped = [];
-        foreach ($result as $record) {
-            $media     = MediaDTO::from($record->get('m')->getProperties()->toArray());
-            $franchise = $record->get('franchise') ?? 'Sin franquicia';
-            $format    = $media->format ?? 'UNKNOWN';
-
-            $grouped[$franchise][$format][] = $media;
+        foreach ($raw as $franchise => $formats) {
+            foreach ($formats as $format => $items) {
+                $grouped[$franchise][$format] = array_map(fn($r) => MediaDTO::from($r), $items);
+            }
         }
 
         return view('admin.media.index', compact('grouped'));
@@ -161,7 +170,7 @@ class MediaCrudController extends Controller
             ]
         );
 
-        Cache::forgetMultiple(CacheKeys::onMediaChange($request->input('franchise_name')));
+        Cache::forgetMultiple(CacheKeys::onMediaChange($request->input('franchise_name'), (int) $id));
 
         return redirect()->route('admin.media.index')->with('success', 'Media updated successfully.');
     }
@@ -173,7 +182,7 @@ class MediaCrudController extends Controller
             'MATCH (m:Media {id: $id}) DETACH DELETE m',
             ['id' => (int) $id]
         );
-        Cache::forgetMultiple(CacheKeys::onMediaChange());
+        Cache::forgetMultiple(CacheKeys::onMediaChange('', (int) $id));
 
         return redirect()->route('admin.media.index')->with('success', 'Media deleted successfully.');
     }

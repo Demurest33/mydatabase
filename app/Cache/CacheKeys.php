@@ -18,6 +18,9 @@ final class CacheKeys
 
     // ── Public catalogue ─────────────────────────────────────────────────────
 
+    /** Flat list of all franchise names (used in sidebars/dropdowns). */
+    public const FRANCHISE_NAMES = 'franchises.names';
+
     /** All franchises for the public catalogue. */
     public const FRANCHISES_CATALOGUE = 'franchises.catalogue';
 
@@ -27,12 +30,27 @@ final class CacheKeys
     /** Franchise→media map for the characters sidebar filter. */
     public const CHARACTERS_FRANCHISE_MEDIA = 'characters.franchise_media';
 
+    /** Asset type counts for the home page sidebar. */
+    public const ASSETS_CATEGORIES = 'assets.categories';
+
     // ── Per-resource detail keys ─────────────────────────────────────────────
 
     /** Timeline & detail for one franchise. */
     public static function franchiseDetail(string $name): string
     {
         return 'franchises.detail.' . Str::slug($name);
+    }
+
+    /** Full detail for one media item. */
+    public static function mediaDetail(int $id): string
+    {
+        return 'media.detail.' . $id;
+    }
+
+    /** Full detail for one character (show page). */
+    public static function characterDetail(int $id): string
+    {
+        return 'characters.detail.' . $id;
     }
 
     // ── Admin catalogue keys ─────────────────────────────────────────────────
@@ -58,6 +76,7 @@ final class CacheKeys
     public static function onFranchiseChange(string $name): array
     {
         return [
+            self::FRANCHISE_NAMES,
             self::FRANCHISES_CATALOGUE,
             self::ADMIN_FRANCHISES_INDEX,
             self::CHARACTERS_GROUPED,
@@ -69,7 +88,7 @@ final class CacheKeys
     }
 
     /** Keys to forget when any Media changes. */
-    public static function onMediaChange(string $franchiseName = ''): array
+    public static function onMediaChange(string $franchiseName = '', int $mediaId = 0): array
     {
         $keys = [
             self::FRANCHISES_CATALOGUE,
@@ -81,6 +100,10 @@ final class CacheKeys
 
         if ($franchiseName) {
             $keys[] = self::franchiseDetail($franchiseName);
+        }
+
+        if ($mediaId) {
+            $keys[] = self::mediaDetail($mediaId);
         }
 
         return $keys;
@@ -97,5 +120,28 @@ final class CacheKeys
             self::FRANCHISES_CATALOGUE,
             self::ADMIN_FRANCHISES_INDEX,
         ];
+    }
+
+    /**
+     * Keys to forget when a new Asset is created and linked.
+     * Invalidates detail caches for every media and character it was linked to,
+     * plus aggregate caches that include asset counts.
+     */
+    public static function onAssetCreate(array $mediaIds = [], array $characterIds = []): array
+    {
+        $keys = [
+            self::ASSETS_CATEGORIES,
+            self::FRANCHISES_CATALOGUE,   // shows asset counts per franchise
+        ];
+
+        foreach ($mediaIds as $id) {
+            $keys[] = self::mediaDetail((int) $id);
+        }
+
+        foreach ($characterIds as $id) {
+            $keys[] = self::characterDetail((int) $id);
+        }
+
+        return array_values(array_unique($keys));
     }
 }

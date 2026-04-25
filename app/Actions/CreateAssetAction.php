@@ -2,9 +2,11 @@
 
 namespace App\Actions;
 
+use App\Cache\CacheKeys;
 use App\Services\Neo4jService;
-use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Exception;
 
 class CreateAssetAction
@@ -112,6 +114,8 @@ class CreateAssetAction
             ', ['ids' => $mediaIds, 'assetId' => $assetId]);
             $linkedCount += count($mediaIds);
         }
+
+        Cache::forgetMultiple(CacheKeys::onAssetCreate($mediaIds, $characterIds));
 
         return $linkedCount;
     }

@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Media Backoffice</x-slot>
 
     @php
@@ -299,4 +299,4 @@
     </script>
     @endpush
 
-</x-layout>
+</x-admin-layout>

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Cache\CacheKeys;
 use App\Services\Neo4jService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Exception;
 
@@ -20,16 +22,14 @@ class AssetController extends Controller
     {
         try {
             $client = $this->neo4j->client();
-            
-            // Fetch categories (Asset types) and their counts
-            $categories = [];
-            $resCats = $client->run('MATCH (a:Asset) WHERE a.type IS NOT NULL RETURN a.type as type, count(a) as count ORDER BY count DESC');
-            foreach ($resCats as $record) {
-                $categories[] = [
-                    'name' => $record->get('type'),
-                    'count' => $record->get('count')
-                ];
-            }
+
+            $categories = Cache::remember(CacheKeys::ASSETS_CATEGORIES, CacheKeys::TTL_LONG, function () use ($client) {
+                $cats = [];
+                foreach ($client->run('MATCH (a:Asset) WHERE a.type IS NOT NULL RETURN a.type as type, count(a) as count ORDER BY count DESC') as $record) {
+                    $cats[] = ['name' => $record->get('type'), 'count' => $record->get('count')];
+                }
+                return $cats;
+            });
 
             // Fallback default categories if empty
             if (empty($categories)) {

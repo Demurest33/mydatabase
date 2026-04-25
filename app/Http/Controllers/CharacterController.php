@@ -126,62 +126,78 @@ class CharacterController extends Controller
     public function show($id)
     {
         try {
-            $client = $this->neo4j->client();
+            $raw = Cache::remember(CacheKeys::characterDetail((int) $id), CacheKeys::TTL_SHORT, function () use ($id) {
+                return $this->buildCharacterDetailRaw((int) $id);
+            });
 
-            $result = $client->run('
-                MATCH (c:Character {id: $id})
-                OPTIONAL MATCH (m:Media)-[r:HAS_CHARACTER]->(c)
-                OPTIONAL MATCH (c)-[:HAS_ASSET]->(a:Asset)-[:STORED_IN]->(s:Storage)
-                RETURN c,
-                       collect(DISTINCT m)                       as medias,
-                       collect(DISTINCT {asset: a, storage: s}) as assets
-            ', ['id' => (int) $id]);
-
-            if ($result->isEmpty()) {
+            if ($raw === null) {
                 abort(404, 'Personaje no encontrado');
             }
 
-            $record    = $result->first();
-            $character = CharacterDTO::from($record->get('c')->getProperties()->toArray());
-
-            $medias = array_values(array_filter(array_map(
-                fn($m) => $m ? MediaDTO::from($m->getProperties()->toArray()) : null,
-                $record->get('medias')->toArray()
-            )));
-
-            $assets = array_values(array_filter(array_map(function ($item) {
-                if (!$item['asset']) return null;
-                $a = $item['asset']->getProperties()->toArray();
-                $a['storageName'] = $item['storage']
-                    ? ($item['storage']->getProperties()->toArray()['name'] ?? null)
-                    : null;
-                return AssetDTO::from($a);
-            }, $record->get('assets')->toArray())));
-
-            // Related characters — same-franchise first
-            $charQuery = '
-                MATCH (oc:Character)
-                WHERE oc.id <> $id
-                OPTIONAL MATCH path = (this:Character {id: $id})<-[:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(:Franchise)-[:HAS_ENTRY]->(:Media)-[:HAS_CHARACTER]->(oc)
-                WITH oc, CASE WHEN path IS NOT NULL THEN 1 ELSE 0 END as p
-                WITH oc, max(p) as priority
-                OPTIONAL MATCH (:Media)-[r:HAS_CHARACTER]->(oc) WHERE r.role = "MAIN"
-                WITH oc, priority, count(r) as mainCount
-                RETURN oc, priority, mainCount
-                ORDER BY priority DESC, mainCount DESC, oc.name ASC
-            ';
-
-            $allCharacters = [];
-            foreach ($client->run($charQuery, ['id' => (int) $id]) as $rec) {
-                $p = $rec->get('oc')->getProperties()->toArray();
-                $allCharacters[] = CharacterDTO::from($p + ['priority' => (int) $rec->get('priority')]);
-            }
+            $character     = CharacterDTO::from($raw['character']);
+            $medias        = array_map(fn($m) => MediaDTO::from($m), $raw['medias']);
+            $assets        = array_map(fn($a) => AssetDTO::from($a), $raw['assets']);
+            $allCharacters = array_map(fn($c) => CharacterDTO::from($c), $raw['allCharacters']);
 
             return view('characters.show', compact('character', 'medias', 'assets', 'allCharacters'));
 
         } catch (Exception $e) {
             abort(500, $e->getMessage());
         }
+    }
+
+    private function buildCharacterDetailRaw(int $id): ?array
+    {
+        $client = $this->neo4j->client();
+
+        $result = $client->run('
+            MATCH (c:Character {id: $id})
+            OPTIONAL MATCH (m:Media)-[r:HAS_CHARACTER]->(c)
+            OPTIONAL MATCH (c)-[:HAS_ASSET]->(a:Asset)-[:STORED_IN]->(s:Storage)
+            RETURN c,
+                   collect(DISTINCT m)                       as medias,
+                   collect(DISTINCT {asset: a, storage: s}) as assets
+        ', ['id' => $id]);
+
+        if ($result->isEmpty()) {
+            return null;
+        }
+
+        $record = $result->first();
+
+        $medias = array_values(array_filter(array_map(
+            fn($m) => $m ? $m->getProperties()->toArray() : null,
+            $record->get('medias')->toArray()
+        )));
+
+        $assets = array_values(array_filter(array_map(function ($item) {
+            if (!$item['asset']) return null;
+            $a = $item['asset']->getProperties()->toArray();
+            $a['storageName'] = $item['storage']
+                ? ($item['storage']->getProperties()->toArray()['name'] ?? null)
+                : null;
+            return $a;
+        }, $record->get('assets')->toArray())));
+
+        $allCharacters = [];
+        foreach ($client->run('
+            MATCH (c:Character {id: $id})<-[:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(:Franchise)-[:HAS_ENTRY]->(:Media)-[:HAS_CHARACTER]->(oc:Character)
+            WHERE oc.id <> $id
+            WITH DISTINCT oc
+            OPTIONAL MATCH (:Media)-[r:HAS_CHARACTER]->(oc) WHERE r.role = "MAIN"
+            WITH oc, count(r) as mainCount
+            RETURN oc, mainCount
+            ORDER BY mainCount DESC, oc.name ASC
+        ', ['id' => $id]) as $rec) {
+            $allCharacters[] = $rec->get('oc')->getProperties()->toArray();
+        }
+
+        return [
+            'character'     => $record->get('c')->getProperties()->toArray(),
+            'medias'        => $medias,
+            'assets'        => $assets,
+            'allCharacters' => $allCharacters,
+        ];
     }
 
     // ── JSON search endpoint ─────────────────────────────────────────────────

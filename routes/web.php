@@ -22,8 +22,6 @@ Route::post('/would-you-rather/fetch', [WouldYouRatherController::class, 'fetch'
 Route::get('/would-you-rather/game', [WouldYouRatherController::class, 'game'])->name('wyr.game');
 Route::get('/would-you-rather/progress/{batchId}', [WouldYouRatherController::class, 'progress'])->name('wyr.progress');
 
-Route::get('/neo4j', [Neo4jController::class, 'index'])->name('neo4j.index');
-Route::get('/neo4j/data', [Neo4jController::class, 'graphData'])->name('neo4j.data');
 Route::get('/api/media/search', [Neo4jController::class, 'searchMediaJson'])->name('api.media.search');
 
 Route::get('/media/{id}', [\App\Http\Controllers\MediaController::class, 'show'])->name('media.show');

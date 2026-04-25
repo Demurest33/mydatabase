@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Admin Dashboard</x-slot>
 
     <div class="mb-8 flex items-center justify-between">
@@ -6,13 +6,6 @@
             <h1 class="text-3xl font-extrabold text-white">Backoffice Dashboard</h1>
             <p class="text-gray-400 mt-2">Manage the Neo4j Graph database entities</p>
         </div>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-4 py-2 rounded-xl transition-colors font-bold text-sm flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                Logout
-            </button>
-        </form>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -52,4 +45,4 @@
             <p class="text-sm text-gray-500">Manage database characters and their associations.</p>
         </a>
     </div>
-</x-layout>
+</x-admin-layout>

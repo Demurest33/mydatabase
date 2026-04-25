@@ -21,7 +21,6 @@
                 <x-nav-link href="{{ route('wyr.index') }}" :active="request()->routeIs('wyr.*')">Would You Rather</x-nav-link>
                 <x-nav-link href="{{ route('franchises.index') }}" :active="request()->routeIs('franchises.*')">Franchises</x-nav-link>
                 <x-nav-link href="{{ route('characters.index') }}" :active="request()->routeIs('characters.*')">Characters</x-nav-link>
-                <x-nav-link href="{{ route('neo4j.index') }}" :active="request()->routeIs('neo4j.*')">Graph Data</x-nav-link>
             </div>
 
             <!-- Right Side CTA / Extra -->
@@ -57,7 +56,6 @@
             <x-nav-link href="{{ route('wyr.index') }}" :active="request()->routeIs('wyr.*')" class="block">Would You Rather</x-nav-link>
             <x-nav-link href="{{ route('franchises.index') }}" :active="request()->routeIs('franchises.*')" class="block">Franchises</x-nav-link>
             <x-nav-link href="{{ route('characters.index') }}" :active="request()->routeIs('characters.*')" class="block">Characters</x-nav-link>
-            <x-nav-link href="{{ route('neo4j.index') }}" :active="request()->routeIs('neo4j.*')" class="block">Graph Data</x-nav-link>
             @auth
                 <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium text-indigo-400 hover:text-indigo-300 hover:bg-gray-800 transition-colors">Backoffice</a>
             @else

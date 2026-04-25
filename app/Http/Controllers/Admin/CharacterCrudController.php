@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Cache\CacheKeys;
-use App\DTOs\AppearanceDTO;
 use App\DTOs\CharacterDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
 use Illuminate\Support\Facades\Cache;
+use Exception;
 
 class CharacterCrudController extends Controller
 {
@@ -21,74 +21,94 @@ class CharacterCrudController extends Controller
 
     public function index()
     {
-        $client = $this->neo4j->client();
+        $raw = Cache::remember(CacheKeys::ADMIN_CHARACTERS_GROUPED, CacheKeys::TTL_LONG, function () {
+            return $this->buildRaw();
+        });
 
-        // Aggregate all media appearances per character to avoid duplicates
-        $result = $client->run(
-            'MATCH (c:Character)
-             OPTIONAL MATCH (m:Media)-[r:HAS_CHARACTER]->(c)
-             OPTIONAL MATCH (f:Franchise)-[:HAS_ENTRY]->(m)
-             WITH c,
-                  collect(CASE WHEN m IS NOT NULL
-                      THEN {mediaId: toString(m.id), mediaTitle: m.title, role: r.role, franchise: f.name}
-                      ELSE null END) AS rawApps
-             RETURN c, [a IN rawApps WHERE a IS NOT NULL] AS appearances
-             ORDER BY c.name ASC'
-        );
-
-        $roleOrder      = ['MAIN' => 0, 'SUPPORTING' => 1, 'BACKGROUND' => 2];
-        $grouped        = [];
-        $franchiseMedia = [];
-
-        foreach ($result as $record) {
-            $props = $record->get('c')->getProperties()->toArray();
-            $apps  = [];
-
-            foreach ($record->get('appearances') as $app) {
-                $franchise = $app['franchise'] ?? null;
-                $mediaId   = (string) ($app['mediaId'] ?? '');
-                if (!$franchise || !$mediaId) continue;
-
-                $apps[] = AppearanceDTO::from([
-                    'mediaId'    => $mediaId,
-                    'mediaTitle' => (string) ($app['mediaTitle'] ?? ''),
-                    'role'       => (string) ($app['role']       ?? 'UNKNOWN'),
-                    'franchise'  => (string) $franchise,
-                ]);
-
-                $franchiseMedia[$franchise][$mediaId] ??= (object) [
-                    'id'    => $mediaId,
-                    'title' => (string) ($app['mediaTitle'] ?? ''),
-                ];
+        $grouped = [];
+        foreach ($raw['grouped'] as $franchise => $roles) {
+            foreach ($roles as $role => $chars) {
+                $grouped[$franchise][$role] = array_map(fn($d) => CharacterDTO::from($d), $chars);
             }
-
-            if (empty($apps)) {
-                $grouped['Sin franquicia']['UNKNOWN'][] = CharacterDTO::from($props);
-                continue;
-            }
-
-            usort($apps, fn(AppearanceDTO $a, AppearanceDTO $b) =>
-                ($roleOrder[$a->role] ?? 99) <=> ($roleOrder[$b->role] ?? 99)
-            );
-
-            $primary = $apps[0];
-            $char    = CharacterDTO::from($props + [
-                'mediaIds'   => array_values(array_unique(array_map(fn(AppearanceDTO $a) => $a->mediaId, $apps))),
-                'mediaTitle' => $primary->mediaTitle,
-                'role'       => $primary->role,
-            ]);
-
-            $grouped[$primary->franchise][$primary->role][] = $char;
         }
-
-        ksort($grouped);
-        ksort($franchiseMedia);
-        foreach ($franchiseMedia as &$items) {
-            usort($items, fn($a, $b) => strcmp($a['title'], $b['title']));
-            $items = array_values($items);
+        $franchiseMedia = [];
+        foreach ($raw['franchiseMedia'] as $franchise => $items) {
+            $franchiseMedia[$franchise] = array_map(fn($d) => (object) $d, $items);
         }
 
         return view('admin.characters.index', compact('grouped', 'franchiseMedia'));
+    }
+
+    private function buildRaw(): array
+    {
+        try {
+            $client = $this->neo4j->client();
+            $result = $client->run(
+                'MATCH (c:Character)
+                 OPTIONAL MATCH (m:Media)-[r:HAS_CHARACTER]->(c)
+                 OPTIONAL MATCH (f:Franchise)-[:HAS_ENTRY]->(m)
+                 WITH c,
+                      collect(CASE WHEN m IS NOT NULL
+                          THEN {mediaId: toString(m.id), mediaTitle: m.title, role: r.role, franchise: f.name}
+                          ELSE null END) AS rawApps
+                 RETURN c, [a IN rawApps WHERE a IS NOT NULL] AS appearances
+                 ORDER BY c.name ASC'
+            );
+
+            $roleOrder      = ['MAIN' => 0, 'SUPPORTING' => 1, 'BACKGROUND' => 2];
+            $grouped        = [];
+            $franchiseMedia = [];
+
+            foreach ($result as $record) {
+                $props = $record->get('c')->getProperties()->toArray();
+                $apps  = [];
+
+                foreach ($record->get('appearances') as $app) {
+                    $franchise = $app['franchise'] ?? null;
+                    $mediaId   = (string) ($app['mediaId'] ?? '');
+                    if (!$franchise || !$mediaId) continue;
+
+                    $apps[] = [
+                        'mediaId'    => $mediaId,
+                        'mediaTitle' => (string) ($app['mediaTitle'] ?? ''),
+                        'role'       => (string) ($app['role'] ?? 'UNKNOWN'),
+                        'franchise'  => (string) $franchise,
+                    ];
+
+                    $franchiseMedia[$franchise][$mediaId] ??= [
+                        'id'    => $mediaId,
+                        'title' => (string) ($app['mediaTitle'] ?? ''),
+                    ];
+                }
+
+                if (empty($apps)) {
+                    $grouped['Sin franquicia']['UNKNOWN'][] = $props;
+                    continue;
+                }
+
+                usort($apps, fn($a, $b) =>
+                    ($roleOrder[$a['role']] ?? 99) <=> ($roleOrder[$b['role']] ?? 99)
+                );
+
+                $primary = $apps[0];
+                $grouped[$primary['franchise']][$primary['role']][] = $props + [
+                    'mediaIds'   => array_values(array_unique(array_column($apps, 'mediaId'))),
+                    'mediaTitle' => $primary['mediaTitle'],
+                    'role'       => $primary['role'],
+                ];
+            }
+
+            ksort($grouped);
+            ksort($franchiseMedia);
+            foreach ($franchiseMedia as &$items) {
+                usort($items, fn($a, $b) => strcmp($a['title'], $b['title']));
+                $items = array_values($items);
+            }
+
+            return compact('grouped', 'franchiseMedia');
+        } catch (Exception $e) {
+            return ['grouped' => [], 'franchiseMedia' => []];
+        }
     }
 
     public function create()

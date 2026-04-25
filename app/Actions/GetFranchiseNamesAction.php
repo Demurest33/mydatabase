@@ -2,7 +2,10 @@
 
 namespace App\Actions;
 
+use App\Cache\CacheKeys;
 use App\Services\Neo4jService;
+use Illuminate\Support\Facades\Cache;
+use Exception;
 
 class GetFranchiseNamesAction
 {
@@ -13,19 +16,23 @@ class GetFranchiseNamesAction
         $this->neo4jService = $neo4jService;
     }
 
-    /**
-     * Devuelve un arreglo simple con los nombres de todas las franquicias ordenadas alfabéticamente.
-     */
     public function execute(): array
     {
-        $client = $this->neo4jService->client();
-        $franchises = [];
-        
-        $res = $client->run('MATCH (f:Franchise) RETURN f.name as name ORDER BY f.name ASC');
-        foreach ($res as $record) {
-            $franchises[] = $record->get('name');
+        $cached = Cache::get(CacheKeys::FRANCHISE_NAMES);
+        if ($cached !== null) {
+            return $cached;
         }
 
-        return $franchises;
+        try {
+            $client = $this->neo4jService->client();
+            $franchises = [];
+            foreach ($client->run('MATCH (f:Franchise) RETURN f.name as name ORDER BY f.name ASC') as $record) {
+                $franchises[] = $record->get('name');
+            }
+            Cache::put(CacheKeys::FRANCHISE_NAMES, $franchises, CacheKeys::TTL_LONG);
+            return $franchises;
+        } catch (Exception) {
+            return [];
+        }
     }
 }

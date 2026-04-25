@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Graph Node Dashboard</x-slot>
 
     @push('scripts')
@@ -418,4 +418,4 @@
             }));
         });
     </script>
-</x-layout>
+</x-admin-layout>

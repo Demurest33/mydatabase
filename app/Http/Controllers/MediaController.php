@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Cache\CacheKeys;
 use App\DTOs\AssetDTO;
 use App\DTOs\MediaDTO;
 use App\Services\Neo4jService;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class MediaController extends Controller
@@ -20,49 +21,17 @@ class MediaController extends Controller
     public function show($id)
     {
         try {
-            $client = $this->neo4j->client();
+            $raw = Cache::remember(CacheKeys::mediaDetail((int) $id), CacheKeys::TTL_SHORT, function () use ($id) {
+                return $this->buildRaw((int) $id);
+            });
 
-            $result = $client->run('
-                MATCH (m:Media {id: $id})
-                OPTIONAL MATCH (m)-[:HAS_ASSET]->(a:Asset)
-                OPTIONAL MATCH (m)-[:HAS_GENRE]->(g:Genre)
-                RETURN m,
-                       collect(DISTINCT a) as assets,
-                       collect(DISTINCT g.name) as genres
-            ', ['id' => (int) $id]);
-
-            if ($result->isEmpty()) {
-                abort(404, 'Media item not found in graph database.');
-            }
-
-            $record = $result->first();
-            $mNode  = $record->get('m');
-
-            if ($mNode === null) {
+            if ($raw === null) {
                 abort(404, 'Media item not found.');
             }
 
-            $media = MediaDTO::from($mNode->getProperties()->toArray());
-
-            $genres = array_values(array_filter($record->get('genres')->toArray()));
-
-            $assets = [];
-            foreach ($record->get('assets')->toArray() as $aNode) {
-                if ($aNode === null) continue;
-
-                $a = $aNode->getProperties()->toArray();
-
-                // Normalise createdAt to a string before passing to DTO
-                if (isset($a['createdAt']) && is_object($a['createdAt'])) {
-                    $a['createdAtStr'] = method_exists($a['createdAt'], 'toDateTime')
-                        ? $a['createdAt']->toDateTime()->format('c')
-                        : (string) $a['createdAt'];
-                } else {
-                    $a['createdAtStr'] = $a['createdAt'] ?? now()->format('c');
-                }
-
-                $assets[] = AssetDTO::from($a);
-            }
+            $media  = MediaDTO::from($raw['media']);
+            $genres = $raw['genres'];
+            $assets = array_map(fn($a) => AssetDTO::from($a), $raw['assets']);
 
             usort($assets, fn(AssetDTO $a, AssetDTO $b) =>
                 strnatcmp($a->title ?? (string) $a->id, $b->title ?? (string) $b->id)
@@ -73,5 +42,43 @@ class MediaController extends Controller
         } catch (Exception $e) {
             abort(500, $e->getMessage());
         }
+    }
+
+    private function buildRaw(int $id): ?array
+    {
+        $client = $this->neo4j->client();
+        $result = $client->run('
+            MATCH (m:Media {id: $id})
+            OPTIONAL MATCH (m)-[:HAS_ASSET]->(a:Asset)
+            OPTIONAL MATCH (m)-[:HAS_GENRE]->(g:Genre)
+            RETURN m,
+                   collect(DISTINCT a) as assets,
+                   collect(DISTINCT g.name) as genres
+        ', ['id' => $id]);
+
+        if ($result->isEmpty() || $result->first()->get('m') === null) {
+            return null;
+        }
+
+        $record = $result->first();
+        $genres = array_values(array_filter($record->get('genres')->toArray()));
+
+        $assets = [];
+        foreach ($record->get('assets')->toArray() as $aNode) {
+            if ($aNode === null) continue;
+            $a = $aNode->getProperties()->toArray();
+            if (isset($a['createdAt']) && is_object($a['createdAt'])) {
+                $a['createdAt'] = method_exists($a['createdAt'], 'toDateTime')
+                    ? $a['createdAt']->toDateTime()->format('c')
+                    : (string) $a['createdAt'];
+            }
+            $assets[] = $a;
+        }
+
+        return [
+            'media'  => $record->get('m')->getProperties()->toArray(),
+            'genres' => $genres,
+            'assets' => $assets,
+        ];
     }
 }

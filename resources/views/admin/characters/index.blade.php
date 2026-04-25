@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Characters Backoffice</x-slot>
 
     @php
@@ -293,4 +293,4 @@
     </script>
     @endpush
 
-</x-layout>
+</x-admin-layout>

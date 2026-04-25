@@ -111,7 +111,8 @@ class AssetController extends Controller
     public function store(Request $request, \App\Actions\CreateAssetAction $createAssetAction)
     {
         $request->validate([
-            'file' => 'nullable|file|max:524288',
+            'files' => 'nullable|array',
+            'files.*' => 'file|max:524288',
             'url' => 'nullable|url|max:500',
             'title' => 'nullable|string|max:255',
             'asset_type' => 'required|string|in:ANIME,MANGA,LIGHT NOVEL,DOUJIN,WALLPAPER ENGINE,IMG,MUSIC,GIF,AMV',
@@ -130,17 +131,56 @@ class AssetController extends Controller
                 return back()->with('error', 'Debes vincular el recurso al menos a un personaje o a una obra (media).');
             }
 
-            $count = $createAssetAction->execute(
-                $request->file('file'),
-                $request->input('url'),
-                $request->input('title'),
-                $request->input('asset_type'),
-                $request->file('cover_image'),
-                $characterIds,
-                $mediaIds
-            );
+            $files = $request->file('files');
+            if (!$files && !$request->input('url')) {
+                return back()->with('error', 'Debes proporcionar al menos un archivo o una URL válida.');
+            }
 
-            return back()->with('success', 'Recurso centralizado creado y vinculado a ' . $count . ' elementos en el grafo.');
+            $totalLinkedCount = 0;
+            $itemsCreated = 0;
+            $baseTitle = $request->input('title');
+
+            if ($files && is_array($files)) {
+                // Determine if we need padding (e.g. '01', '02' instead of '1', '2')
+                $padLength = strlen((string)count($files));
+                
+                foreach ($files as $index => $file) {
+                    // Si se provee un título base y hay múltiples archivos, los enumeramos. 
+                    // Ej: "Bleach Episode" -> "Bleach Episode 01", "Bleach Episode 02"
+                    $itemTitle = null;
+                    if ($baseTitle) {
+                        $itemTitle = count($files) > 1 
+                            ? $baseTitle . ' ' . str_pad($index + 1, max(2, $padLength), '0', STR_PAD_LEFT) 
+                            : $baseTitle;
+                    }
+                    
+                    $count = $createAssetAction->execute(
+                        $file,
+                        null,
+                        $itemTitle,
+                        $request->input('asset_type'),
+                        $request->file('cover_image'),
+                        $characterIds,
+                        $mediaIds
+                    );
+                    $totalLinkedCount += $count;
+                    $itemsCreated++;
+                }
+            } else if ($request->input('url')) {
+                $count = $createAssetAction->execute(
+                    null,
+                    $request->input('url'),
+                    $baseTitle,
+                    $request->input('asset_type'),
+                    $request->file('cover_image'),
+                    $characterIds,
+                    $mediaIds
+                );
+                $totalLinkedCount += $count;
+                $itemsCreated++;
+            }
+
+            return back()->with('success', $itemsCreated . ' recurso(s) creado(s) y vinculado(s) a ' . $totalLinkedCount . ' elementos en el grafo.');
 
         } catch (Exception $e) {
             return back()->with('error', 'Error: ' . $e->getMessage());

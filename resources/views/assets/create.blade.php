@@ -93,8 +93,9 @@
                                 </button>
                             </div>
 
-                            <div x-show="sourceMode === 'UPLOAD'" x-transition class="space-y-2">
-                                <input type="file" name="file" class="block w-full text-sm text-gray-400 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 cursor-pointer bg-black/40 border border-gray-800 rounded-xl">
+                            <div x-show="sourceMode === 'UPLOAD'" x-transition class="space-y-2 relative">
+                                <input type="file" name="files[]" multiple class="block w-full text-sm text-gray-400 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 cursor-pointer bg-black/40 border border-gray-800 rounded-xl">
+                                <p class="text-[10px] text-gray-500 mt-1 pl-1">You can select multiple files at once. If you provide a base title, they will be sequentially numbered (e.g. Title 01, Title 02).</p>
                             </div>
                             
                             <div x-show="sourceMode === 'LINK'" x-transition x-cloak class="space-y-2">

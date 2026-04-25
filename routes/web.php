@@ -51,4 +51,8 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::resource('media', \App\Http\Controllers\Admin\MediaCrudController::class)->names('admin.media');
 
     Route::resource('characters', \App\Http\Controllers\Admin\CharacterCrudController::class)->names('admin.characters');
+
+    Route::get('/asset-type-images', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'index'])->name('admin.asset-type-images.index');
+    Route::post('/asset-type-images/{type}', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'upsert'])->name('admin.asset-type-images.upsert')->where('type', '.+');
+    Route::delete('/asset-type-images/{type}', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'destroy'])->name('admin.asset-type-images.destroy')->where('type', '.+');
 });

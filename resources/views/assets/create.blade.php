@@ -8,8 +8,8 @@
     <div class="max-w-7xl mx-auto py-8 px-4" x-data="dashboardForm()">
         <div class="md:flex items-end justify-between mb-8 border-b border-gray-800 pb-6">
             <div>
-                <h1 class="text-3xl font-extrabold text-white tracking-tight">Graph <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Dashboard</span></h1>
-                <p class="text-gray-400 mt-2 text-sm max-w-2xl">Upload centralized assets and distribute them to the Neo4j timeline. You can attach video chapters directly to Media nodes, or sprite images directly to Character nodes.</p>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">Upload <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Assets</span></h1>
+                <p class="text-gray-400 mt-2 text-sm max-w-2xl">Upload media assets to share them with other users.</p>
             </div>
             <div class="mt-4 md:mt-0 opacity-50 text-xs text-right hidden lg:block">
                 Nodes Linked: <b><span x-text="selectedMedia.length + selectedCharacters.length"></span></b>

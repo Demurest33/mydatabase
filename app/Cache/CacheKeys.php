@@ -34,6 +34,9 @@ final class CacheKeys
     /** Asset type counts for the home page sidebar. */
     public const ASSETS_CATEGORIES = 'assets.categories';
 
+    /** Customizable images per asset type (managed from backoffice). */
+    public const ASSET_TYPE_IMAGES = 'assets.type_images';
+
     // ── Per-resource detail keys ─────────────────────────────────────────────
 
     /** Timeline & detail for one franchise. */

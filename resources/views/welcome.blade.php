@@ -5,37 +5,19 @@
     <div class="mb-8 overflow-x-auto pb-4 hide-scrollbar">
         <div class="flex gap-4 min-w-max">
             
-            @php
-                $categoryImages = [
-                    'ANIME' => 'https://images.unsplash.com/photo-1607604276583-eef5d076ff5f?q=80&w=200&auto=format&fit=crop',
-                    'MEMES' => 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=200&auto=format&fit=crop',
-                    'WALLPAPER ENGINE' => 'https://images.unsplash.com/photo-1618336753974-aae8e04506aa?q=80&w=200&auto=format&fit=crop',
-                    'ART' => 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=200&auto=format&fit=crop',
-                    'COSPLAY' => 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=200&auto=format&fit=crop',
-                    'MANGA' => 'https://images.unsplash.com/photo-1588497859490-85d1c17db96d?q=80&w=200&auto=format&fit=crop',
-                    'DEFAULT' => 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=200&auto=format&fit=crop'
-                ];
-                
-                $categoryColors = [
-                    'ANIME' => 'bg-blue-600/80 group-hover:bg-blue-500/80',
-                    'MEMES' => 'bg-purple-600/80 group-hover:bg-purple-500/80',
-                    'WALLPAPER ENGINE' => 'bg-emerald-600/80 group-hover:bg-emerald-500/80',
-                    'ART' => 'bg-orange-600/80 group-hover:bg-orange-500/80',
-                    'COSPLAY' => 'bg-rose-600/80 group-hover:bg-rose-500/80',
-                    'MANGA' => 'bg-amber-600/80 group-hover:bg-amber-500/80',
-                    'DEFAULT' => 'bg-gray-800/80 group-hover:bg-gray-700/80'
-                ];
-            @endphp
-            
             @forelse($categories as $category)
-                @php 
+                @php
                     $catName = strtoupper($category['name']);
-                    $bgImg = $categoryImages[$catName] ?? $categoryImages['DEFAULT'];
-                    $colorClass = $categoryColors[$catName] ?? $categoryColors['DEFAULT'];
+                    $bgImg   = $category['imageUrl'] ?? null;
                 @endphp
-                <a href="{{ route('home', ['type' => $category['name']]) }}" class="relative overflow-hidden rounded-xl w-32 h-20 group {{ request('type') === $category['name'] ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-900' : '' }}">
-                    <div class="absolute inset-0 {{ $colorClass }} mix-blend-multiply z-10 transition-colors"></div>
-                    <img src="{{ $bgImg }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="{{ $catName }}">
+                <a href="{{ route('home', ['type' => $category['name']]) }}"
+                   class="relative overflow-hidden rounded-xl w-32 h-20 group {{ request('type') === $category['name'] ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-900' : '' }}">
+                    <div class="absolute inset-0 bg-gray-800/80 group-hover:bg-gray-700/80 mix-blend-multiply z-10 transition-colors"></div>
+                    @if($bgImg)
+                        <img src="{{ $bgImg }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="{{ $catName }}">
+                    @else
+                        <div class="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900"></div>
+                    @endif
                     <div class="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-2 text-center">
                         <span class="font-bold text-sm truncate w-full">{{ $catName }}</span>
                         <span class="text-xs text-white/70">{{ number_format($category['count']) }} Posts</span>

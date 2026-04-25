@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Cache\CacheKeys;
+use App\Models\AssetTypeImage;
 use App\Services\Neo4jService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -30,6 +31,15 @@ class AssetController extends Controller
                 }
                 return $cats;
             });
+
+            // Merge type images (MySQL) into categories
+            $typeImages = Cache::remember(CacheKeys::ASSET_TYPE_IMAGES, CacheKeys::TTL_LONG, function () {
+                return AssetTypeImage::all()->keyBy('type')->map->image_url->toArray();
+            });
+            foreach ($categories as &$cat) {
+                $cat['imageUrl'] = $typeImages[strtoupper($cat['name'])] ?? null;
+            }
+            unset($cat);
 
             // Fallback default categories if empty
             if (empty($categories)) {

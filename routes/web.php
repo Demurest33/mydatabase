@@ -40,6 +40,7 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::get('/assets', [\App\Http\Controllers\Admin\AssetCrudController::class, 'index'])->name('admin.assets.index');
+    Route::get('/steam-preview', [\App\Http\Controllers\Admin\SteamScraperController::class, 'preview'])->name('admin.steam.preview');
     Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
     Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
     Route::get('/assets/{id}/edit', [\App\Http\Controllers\Admin\AssetCrudController::class, 'edit'])->name('admin.assets.edit');

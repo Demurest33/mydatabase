@@ -135,6 +135,7 @@ class AssetController extends Controller
             'title' => 'nullable|string|max:255',
             'asset_type' => 'required|string|in:ANIME,MANGA,LIGHT NOVEL,DOUJIN,WALLPAPER ENGINE,IMG,MUSIC,GIF,AMV',
             'cover_image' => 'nullable|image|max:10240',
+            'cover_url' => 'nullable|url|max:1000',
             'characters' => 'nullable|array',
             'characters.*' => 'integer',
             'media' => 'nullable|array',
@@ -179,7 +180,8 @@ class AssetController extends Controller
                         $request->input('asset_type'),
                         $request->file('cover_image'),
                         $characterIds,
-                        $mediaIds
+                        $mediaIds,
+                        $request->input('cover_url')
                     );
                     $totalLinkedCount += $count;
                     $itemsCreated++;
@@ -192,7 +194,8 @@ class AssetController extends Controller
                     $request->input('asset_type'),
                     $request->file('cover_image'),
                     $characterIds,
-                    $mediaIds
+                    $mediaIds,
+                    $request->input('cover_url')
                 );
                 $totalLinkedCount += $count;
                 $itemsCreated++;

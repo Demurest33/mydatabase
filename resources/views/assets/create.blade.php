@@ -73,9 +73,48 @@
                             </select>
                         </div>
 
+                        <!-- Steam Workshop scraper (WALLPAPER ENGINE only) -->
+                        <div x-show="assetType === 'WALLPAPER ENGINE'" x-transition
+                             class="rounded-xl border border-teal-500/30 bg-teal-500/5 p-4 space-y-3">
+                            <p class="text-xs font-bold text-teal-400 uppercase tracking-wider flex items-center gap-2">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                Steam Workshop Auto-fill
+                            </p>
+                            <div class="flex gap-2">
+                                <input type="text" x-model="steamInput"
+                                       placeholder="URL o ID — ej: 899497344"
+                                       class="flex-1 bg-black/40 border border-gray-700 text-white rounded-xl px-3 py-2.5 text-sm placeholder-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors">
+                                <button type="button" @click="fetchSteam"
+                                        :disabled="steamLoading"
+                                        class="px-4 py-2.5 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
+                                    <svg x-show="!steamLoading" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                    </svg>
+                                    <svg x-show="steamLoading" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                    </svg>
+                                    Fetch
+                                </button>
+                            </div>
+                            <p x-show="steamError" x-text="steamError" class="text-xs text-red-400"></p>
+                            <!-- Preview -->
+                            <div x-show="steamPreview.imageUrl" x-transition class="flex items-start gap-3 bg-black/20 rounded-xl p-3">
+                                <img :src="steamPreview.imageUrl" class="w-20 aspect-video object-cover rounded-lg border border-gray-700 flex-shrink-0">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-semibold text-white truncate" x-text="steamPreview.title"></p>
+                                    <p class="text-[10px] text-teal-400 mt-1">Title and thumbnail will be saved automatically</p>
+                                </div>
+                            </div>
+                            <!-- Hidden fields carrying scraped data -->
+                            <input type="hidden" name="cover_url" :value="steamPreview.imageUrl">
+                        </div>
+
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Display Title <span class="text-gray-600 font-normal normal-case">(Optional)</span></label>
-                            <input type="text" name="title" placeholder="Leave empty for filename" class="w-full bg-black/40 border border-gray-700 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors placeholder-gray-600 text-sm">
+                            <input type="text" name="title" x-model="titleOverride" placeholder="Leave empty for filename" class="w-full bg-black/40 border border-gray-700 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors placeholder-gray-600 text-sm">
                         </div>
 
                         <!-- Source Type Switcher -->
@@ -99,7 +138,7 @@
                             </div>
                             
                             <div x-show="sourceMode === 'LINK'" x-transition x-cloak class="space-y-2">
-                                <input type="url" name="url" placeholder="https://example.com/stream.m3u8" class="w-full bg-black/40 border border-gray-800 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 transition-colors placeholder-gray-600 text-sm">
+                                <input type="url" name="url" x-model="linkUrl" placeholder="https://example.com/stream.m3u8" class="w-full bg-black/40 border border-gray-800 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 transition-colors placeholder-gray-600 text-sm">
                             </div>
                         </div>
 
@@ -259,6 +298,35 @@
                                     </template>
                                 </div>
                             </div>
+
+                            <!-- OTHER GROUP -->
+                            <div x-show="otherResults.length > 0" class="pt-2">
+                                <h4 class="text-xs font-black text-emerald-500 mb-3 uppercase tracking-widest border-b border-emerald-500/20 pb-2">Other</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                                    <template x-for="item in otherResults" :key="item.id">
+                                        <label class="flex relative rounded-xl border p-2 cursor-pointer transition-all hover:-translate-y-1 bg-black/20"
+                                            :class="isMediaSelected(item.id) ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)] bg-emerald-500/10' : 'border-gray-800 hover:border-gray-600'">
+
+                                            <div class="absolute -top-2 -right-2 rounded-full w-6 h-6 border-2 border-gray-900 bg-gray-800 flex items-center justify-center transition-colors z-10"
+                                                 :class="isMediaSelected(item.id) ? 'bg-emerald-500 border-emerald-500' : ''">
+                                                <input type="checkbox" :checked="isMediaSelected(item.id)" @change="toggleMedia(item)" class="hidden">
+                                                <svg x-show="isMediaSelected(item.id)" class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                            </div>
+
+                                            <div class="shrink-0 w-12 h-16 rounded overflow-hidden mr-3 bg-gray-900">
+                                                <img :src="item.coverImage || ''" class="w-full h-full object-cover">
+                                            </div>
+                                            <div class="flex flex-col justify-center min-w-0 pr-2">
+                                                <p class="text-[10px] font-black uppercase text-emerald-500 mb-0.5 tracking-wider truncate" x-text="item.format || 'UNKNOWN'"></p>
+                                                <h4 class="text-sm font-bold text-gray-200 leading-tight line-clamp-2" x-text="item.title || ''"></h4>
+                                                <div class="flex content-center gap-1 mt-1">
+                                                    <span class="text-[10px] text-gray-500 font-medium" x-text="item.start_year || 'TBA'"></span>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- TAB: CHARACTER GRAPH BINDING -->
@@ -300,9 +368,15 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('dashboardForm', () => ({
-                activeTab: 'media', 
+                activeTab: 'media',
                 assetType: 'ANIME',
                 sourceMode: 'UPLOAD',
+                titleOverride: '',
+                steamInput: '',
+                steamLoading: false,
+                steamError: '',
+                steamPreview: { title: '', imageUrl: '' },
+                linkUrl: '',
                 searchQuery: '',
                 searchFranchise: 'ALL',
                 searchResultsMedia: [],
@@ -312,15 +386,24 @@
                 loading: false,
 
                 get animeResults() {
+                    const formats = ['TV','MOVIE','OVA','ONA','SPECIAL','ANIME','TV_SHORT','MUSIC'];
                     return this.searchResultsMedia
-                        .filter(m => m.type === 'ANIME')
+                        .filter(m => formats.includes((m.format || '').toUpperCase()))
                         .sort((a, b) => this.compareDates(a, b));
                 },
 
                 get mangaResults() {
+                    const formats = ['MANGA','ONE_SHOT','NOVEL','LIGHT_NOVEL'];
                     return this.searchResultsMedia
-                        .filter(m => m.type === 'MANGA')
+                        .filter(m => formats.includes((m.format || '').toUpperCase()))
                         .sort((a, b) => this.compareDates(a, b));
+                },
+
+                get otherResults() {
+                    const known = ['TV','MOVIE','OVA','ONA','SPECIAL','ANIME','TV_SHORT','MUSIC','MANGA','ONE_SHOT','NOVEL','LIGHT_NOVEL'];
+                    return this.searchResultsMedia
+                        .filter(m => !known.includes((m.format || '').toUpperCase()))
+                        .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
                 },
 
                 compareDates(a, b) {
@@ -335,6 +418,60 @@
                     const dA = a.start_day || 31;
                     const dB = b.start_day || 31;
                     return dA - dB;
+                },
+
+                async autoSelectWallpaperEngine() {
+                    if (this.assetType !== 'WALLPAPER ENGINE') return;
+                    if (this.selectedMedia.some(m => (m.title || '').toLowerCase() === 'wallpaper engine')) return;
+
+                    // Try current results first, then do a targeted fetch
+                    let match = this.searchResultsMedia.find(m =>
+                        (m.title || '').toLowerCase() === 'wallpaper engine'
+                    );
+
+                    if (!match) {
+                        try {
+                            const res = await fetch('/api/media/search?search=Wallpaper+Engine');
+                            if (res.ok) {
+                                const results = await res.json();
+                                match = results.find(m =>
+                                    (m.title || '').toLowerCase() === 'wallpaper engine'
+                                );
+                            }
+                        } catch (e) {}
+                    }
+
+                    if (match && !this.isMediaSelected(match.id)) {
+                        this.selectedMedia.push(match);
+                    }
+                },
+
+                async fetchSteam() {
+                    if (!this.steamInput.trim()) return;
+                    this.steamLoading = true;
+                    this.steamError   = '';
+                    this.steamPreview = { title: '', imageUrl: '' };
+                    try {
+                        const res = await fetch(`/admin/steam-preview?url=${encodeURIComponent(this.steamInput)}`);
+                        const data = await res.json();
+                        if (!res.ok) {
+                            this.steamError = data.error || 'Failed to fetch Steam data.';
+                        } else {
+                            this.steamPreview = data;
+                            if (data.title && !this.titleOverride) {
+                                this.titleOverride = data.title;
+                            }
+                            // Use the Steam URL as the asset URL
+                            this.linkUrl = this.steamInput.startsWith('http')
+                                ? this.steamInput
+                                : `https://steamcommunity.com/sharedfiles/filedetails/?id=${this.steamInput}`;
+                            this.sourceMode = 'LINK';
+                        }
+                    } catch (e) {
+                        this.steamError = 'Network error.';
+                    } finally {
+                        this.steamLoading = false;
+                    }
                 },
 
                 init() {
@@ -353,8 +490,12 @@
 
                 // Listen for tab changes via Alpine watch to fetch data if needed
                 initWatch() {
-                    this.$watch('activeTab', value => {
-                        this.debouncedFetch();
+                    this.$watch('activeTab', () => this.debouncedFetch());
+                    this.$watch('assetType', value => {
+                        if (value === 'WALLPAPER ENGINE') {
+                            this.sourceMode = 'LINK';
+                            this.autoSelectWallpaperEngine();
+                        }
                     });
                 },
 

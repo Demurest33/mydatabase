@@ -6,6 +6,8 @@ use App\Cache\CacheKeys;
 use App\Services\Neo4jService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Exception;
 
@@ -25,7 +27,8 @@ class CreateAssetAction
         string $assetType,
         ?UploadedFile $coverImage,
         array $characterIds,
-        array $mediaIds = []
+        array $mediaIds = [],
+        ?string $remoteCoverUrl = null
     ): int {
         $client = $this->neo4j->client();
         $assetId = Str::uuid()->toString();
@@ -57,6 +60,13 @@ class CreateAssetAction
             $coverOriginalName = $coverImage->getClientOriginalName();
             $coverFilename = time() . '_cover_' . Str::slug(pathinfo($coverOriginalName, PATHINFO_FILENAME)) . '.' . $coverExt;
             $coverImage->storeAs('assets/covers', $coverFilename, 'public');
+        } elseif ($remoteCoverUrl) {
+            $imgResponse = Http::timeout(10)->get($remoteCoverUrl);
+            if ($imgResponse->ok()) {
+                $ext = pathinfo(parse_url($remoteCoverUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+                $coverFilename = time() . '_cover_remote.' . $ext;
+                Storage::disk('public')->put('assets/covers/' . $coverFilename, $imgResponse->body());
+            }
         }
 
         // Crear Nodo Asset

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\AppearanceDTO;
+use App\DTOs\AssetDTO;
+use App\DTOs\CharacterDTO;
+use App\DTOs\MediaDTO;
 use App\Services\Neo4jService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Exception;
 
 class CharacterController extends Controller
@@ -15,6 +18,8 @@ class CharacterController extends Controller
     {
         $this->neo4j = $neo4j;
     }
+
+    // ── Public index (grouped by franchise / role) ───────────────────────────
 
     public function index()
     {
@@ -38,43 +43,45 @@ class CharacterController extends Controller
             $franchiseMedia = [];
 
             foreach ($result as $record) {
-                $char = $record->get('c')->getProperties()->toArray();
-                $apps = [];
+                $props = $record->get('c')->getProperties()->toArray();
+                $apps  = [];
 
                 foreach ($record->get('appearances') as $app) {
                     $franchise = $app['franchise'] ?? null;
                     $mediaId   = (string) ($app['mediaId'] ?? '');
                     if (!$franchise || !$mediaId) continue;
 
-                    $apps[] = [
+                    $apps[] = AppearanceDTO::from([
                         'mediaId'    => $mediaId,
                         'mediaTitle' => (string) ($app['mediaTitle'] ?? ''),
-                        'role'       => (string) ($app['role'] ?? 'UNKNOWN'),
+                        'role'       => (string) ($app['role']       ?? 'UNKNOWN'),
                         'franchise'  => (string) $franchise,
-                    ];
+                    ]);
 
-                    $franchiseMedia[$franchise][$mediaId] ??= [
+                    $franchiseMedia[$franchise][$mediaId] ??= (object) [
                         'id'    => $mediaId,
                         'title' => (string) ($app['mediaTitle'] ?? ''),
                     ];
                 }
 
                 if (empty($apps)) {
-                    $char['mediaIds']    = [];
-                    $char['mediaTitle']  = null;
+                    $char = CharacterDTO::from($props);
                     $grouped['Sin franquicia']['UNKNOWN'][] = $char;
                     continue;
                 }
 
-                usort($apps, fn($a, $b) =>
-                    ($roleOrder[$a['role']] ?? 99) <=> ($roleOrder[$b['role']] ?? 99)
+                usort($apps, fn(AppearanceDTO $a, AppearanceDTO $b) =>
+                    ($roleOrder[$a->role] ?? 99) <=> ($roleOrder[$b->role] ?? 99)
                 );
 
-                $primary             = $apps[0];
-                $char['mediaIds']    = array_values(array_unique(array_column($apps, 'mediaId')));
-                $char['mediaTitle']  = $primary['mediaTitle'];
+                $primary = $apps[0];
+                $char    = CharacterDTO::from($props + [
+                    'mediaIds'   => array_values(array_unique(array_map(fn(AppearanceDTO $a) => $a->mediaId, $apps))),
+                    'mediaTitle' => $primary->mediaTitle,
+                    'role'       => $primary->role,
+                ]);
 
-                $grouped[$primary['franchise']][$primary['role']][] = $char;
+                $grouped[$primary->franchise][$primary->role][] = $char;
             }
 
             ksort($grouped);
@@ -92,105 +99,44 @@ class CharacterController extends Controller
         return view('characters.index', compact('grouped', 'franchiseMedia'));
     }
 
-    public function searchJson(Request $request)
-    {
-        $search = $request->input('search');
-        $franchise = $request->input('franchise');
-        $characters = [];
-
-        try {
-            $client = $this->neo4j->client();
-            
-            $where = [];
-            $params = [];
-
-            if ($search) {
-                $where[] = '(toLower(c.name) CONTAINS toLower($search) OR c.id = $search)';
-                $params['search'] = $search;
-            }
-            if ($franchise && $franchise !== 'ALL') {
-                $params['franchise'] = $franchise;
-            }
-
-            $query = '';
-            
-            // Scope limit MUST be a strict MATCH to filter out unwanted root nodes.
-            if ($franchise && $franchise !== 'ALL') {
-                $query .= 'MATCH (f:Franchise {name: $franchise})-[:HAS_ENTRY]->(:Media)-[:HAS_CHARACTER]->(c:Character) ';
-                if (count($where) > 0) {
-                    $query .= ' WHERE ' . implode(' AND ', $where);
-                }
-                $query .= ' WITH DISTINCT c '; // Group to avoid duplication before fetching their holistic attributes
-                $query .= ' OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(allF:Franchise) ';
-            } else {
-                $query .= 'MATCH (c:Character) ';
-                if (count($where) > 0) {
-                    $query .= ' WHERE ' . implode(' AND ', $where);
-                }
-                $query .= ' OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(allF:Franchise) ';
-            }
-
-            $query .= '
-                OPTIONAL MATCH (c)-[:HAS_ASSET]->(a:Asset)
-                WITH c, count(DISTINCT a) as assetCount, collect(DISTINCT allF.name) as franchises, collect(DISTINCT r.role) as roles
-                WITH c, assetCount, franchises, CASE WHEN "MAIN" IN roles THEN 1 ELSE 0 END as isMain
-                RETURN c, franchises, isMain, assetCount
-                ORDER BY assetCount DESC, isMain DESC, c.name ASC
-                LIMIT 50
-            ';
-            
-            $result = $client->run($query, $params);
-            
-            foreach ($result as $rec) {
-                $char = $rec->get('c')->getProperties()->toArray();
-                $char['franchises'] = $rec->get('franchises')->toArray();
-                $char['isMain'] = $rec->get('isMain');
-                $characters[] = $char;
-            }
-
-            return response()->json($characters);
-        } catch (Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
+    // ── Character detail ─────────────────────────────────────────────────────
 
     public function show($id)
     {
         try {
             $client = $this->neo4j->client();
 
-            // 1. Obtener personaje y sus series relacionadas
-            $query = '
+            $result = $client->run('
                 MATCH (c:Character {id: $id})
                 OPTIONAL MATCH (m:Media)-[r:HAS_CHARACTER]->(c)
                 OPTIONAL MATCH (c)-[:HAS_ASSET]->(a:Asset)-[:STORED_IN]->(s:Storage)
-                RETURN c, collect(DISTINCT m) as medias, collect(DISTINCT {asset: a, storage: s}) as assets
-            ';
+                RETURN c,
+                       collect(DISTINCT m)                       as medias,
+                       collect(DISTINCT {asset: a, storage: s}) as assets
+            ', ['id' => (int) $id]);
 
-            $result = $client->run($query, ['id' => (int)$id]);
-            
             if ($result->isEmpty()) {
-                abort(404, "Personaje no encontrado");
+                abort(404, 'Personaje no encontrado');
             }
 
-            $record = $result->first();
-            $character = $record->get('c')->getProperties()->toArray();
-            
-            $medias = array_map(fn($m) => $m->getProperties()->toArray(), 
-                array_filter($record->get('medias')->toArray(), fn($m) => $m !== null)
-            );
+            $record    = $result->first();
+            $character = CharacterDTO::from($record->get('c')->getProperties()->toArray());
 
-            $assets = array_map(function($item) {
-                if ($item['asset'] === null) return null;
-                return [
-                    'asset' => $item['asset']->getProperties()->toArray(),
-                    'storage' => $item['storage'] ? $item['storage']->getProperties()->toArray() : null
-                ];
-            }, $record->get('assets')->toArray());
-            $assets = array_filter($assets);
+            $medias = array_values(array_filter(array_map(
+                fn($m) => $m ? MediaDTO::from($m->getProperties()->toArray()) : null,
+                $record->get('medias')->toArray()
+            )));
 
-            // 2. Obtener personajes PRIORIZANDO los de la misma franquicia
-            $allCharacters = [];
+            $assets = array_values(array_filter(array_map(function ($item) {
+                if (!$item['asset']) return null;
+                $a = $item['asset']->getProperties()->toArray();
+                $a['storageName'] = $item['storage']
+                    ? ($item['storage']->getProperties()->toArray()['name'] ?? null)
+                    : null;
+                return AssetDTO::from($a);
+            }, $record->get('assets')->toArray())));
+
+            // Related characters — same-franchise first
             $charQuery = '
                 MATCH (oc:Character)
                 WHERE oc.id <> $id
@@ -202,12 +148,11 @@ class CharacterController extends Controller
                 RETURN oc, priority, mainCount
                 ORDER BY priority DESC, mainCount DESC, oc.name ASC
             ';
-            
-            $charResult = $client->run($charQuery, ['id' => (int)$id]);
-            foreach ($charResult as $rec) {
-                $charData = $rec->get('oc')->getProperties()->toArray();
-                $charData['priority'] = $rec->get('priority');
-                $allCharacters[] = $charData;
+
+            $allCharacters = [];
+            foreach ($client->run($charQuery, ['id' => (int) $id]) as $rec) {
+                $p = $rec->get('oc')->getProperties()->toArray();
+                $allCharacters[] = CharacterDTO::from($p + ['priority' => (int) $rec->get('priority')]);
             }
 
             return view('characters.show', compact('character', 'medias', 'assets', 'allCharacters'));
@@ -217,23 +162,83 @@ class CharacterController extends Controller
         }
     }
 
+    // ── JSON search endpoint ─────────────────────────────────────────────────
+
+    public function searchJson(Request $request)
+    {
+        $search    = $request->input('search');
+        $franchise = $request->input('franchise');
+        $characters = [];
+
+        try {
+            $client = $this->neo4j->client();
+
+            $where  = [];
+            $params = [];
+
+            if ($search) {
+                $where[]          = '(toLower(c.name) CONTAINS toLower($search) OR c.id = $search)';
+                $params['search'] = $search;
+            }
+
+            if ($franchise && $franchise !== 'ALL') {
+                $params['franchise'] = $franchise;
+            }
+
+            $query = $franchise && $franchise !== 'ALL'
+                ? 'MATCH (f:Franchise {name: $franchise})-[:HAS_ENTRY]->(:Media)-[:HAS_CHARACTER]->(c:Character) '
+                : 'MATCH (c:Character) ';
+
+            if ($where) {
+                $query .= ' WHERE ' . implode(' AND ', $where);
+            }
+
+            $scopedMatch = $franchise && $franchise !== 'ALL'
+                ? ' WITH DISTINCT c OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(allF:Franchise) '
+                : ' OPTIONAL MATCH (c)<-[r:HAS_CHARACTER]-(:Media)<-[:HAS_ENTRY]-(allF:Franchise) ';
+
+            $query .= $scopedMatch . '
+                OPTIONAL MATCH (c)-[:HAS_ASSET]->(a:Asset)
+                WITH c, count(DISTINCT a) as assetCount, collect(DISTINCT allF.name) as franchises, collect(DISTINCT r.role) as roles
+                WITH c, assetCount, franchises, CASE WHEN "MAIN" IN roles THEN 1 ELSE 0 END as isMain
+                RETURN c, franchises, isMain, assetCount
+                ORDER BY assetCount DESC, isMain DESC, c.name ASC
+                LIMIT 50
+            ';
+
+            foreach ($client->run($query, $params) as $rec) {
+                $char = $rec->get('c')->getProperties()->toArray();
+                $char['franchises'] = $rec->get('franchises')->toArray();
+                $char['isMain']     = $rec->get('isMain');
+                $characters[]       = $char;
+            }
+
+            return response()->json($characters);
+
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function storeAsset(Request $request, $id, \App\Actions\CreateAssetAction $createAssetAction)
     {
         $request->validate([
-            'file' => 'nullable|file|max:524288',
-            'url' => 'nullable|url|max:500',
-            'title' => 'nullable|string|max:255',
-            'asset_type' => 'required|string|in:ANIME,MANGA,LIGHT NOVEL,DOUJIN,WALLPAPER ENGINE,IMG,MUSIC,GIF,AMV',
-            'cover_image' => 'nullable|image|max:10240',
-            'other_characters' => 'nullable|array',
-            'other_characters.*' => 'integer'
+            'file'              => 'nullable|file|max:524288',
+            'url'               => 'nullable|url|max:500',
+            'title'             => 'nullable|string|max:255',
+            'asset_type'        => 'required|string|in:ANIME,MANGA,LIGHT NOVEL,DOUJIN,WALLPAPER ENGINE,IMG,MUSIC,GIF,AMV',
+            'cover_image'       => 'nullable|image|max:10240',
+            'other_characters'  => 'nullable|array',
+            'other_characters.*'=> 'integer',
         ]);
 
         try {
             $otherCharacters = $request->input('other_characters', []);
             if (!is_array($otherCharacters)) $otherCharacters = [];
-            
-            $characterIds = array_values(array_unique(array_map('intval', array_merge([$id], $otherCharacters))));
+
+            $characterIds = array_values(array_unique(
+                array_map('intval', array_merge([$id], $otherCharacters))
+            ));
 
             $count = $createAssetAction->execute(
                 $request->file('file'),

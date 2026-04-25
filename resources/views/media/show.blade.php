@@ -1,5 +1,5 @@
 <x-layout>
-    <x-slot:title>{{ $media['title'] ?? 'Media Details' }}</x-slot>
+    <x-slot:title>{{ $media->title ?? 'Media Details' }}</x-slot>
 
     @push('scripts')
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -7,10 +7,10 @@
 
     @php
         // Media Title Fallbacks
-        $romaji = $media['title'] ?? 'N/A'; // SaveAnilist stores title romaji in 'title'
-        $native = $media['native'] ?? '';
-        $type = $media['type'] ?? 'UNKNOWN';
-        $cover = $media['coverImage'] ?? 'https://via.placeholder.com/300x450';
+        $romaji = $media->title ?? 'N/A'; // SaveAnilist stores title romaji in 'title'
+        $native = $media->native ?? '';
+        $type = $media->type ?? 'UNKNOWN';
+        $cover = $media->coverImage ?? 'https://via.placeholder.com/300x450';
     @endphp
 
     <div class="max-w-[1400px] mx-auto py-8 px-4" x-data="mediaViewer({{ Js::from($assets) }}, {{ request()->get('asset_id') ? request()->get('asset_id') : 'null' }})">
@@ -86,11 +86,11 @@
                         <h1 class="text-white text-3xl font-extrabold mb-4" x-text="currentAsset ? currentAsset.title : '{{ addslashes($romaji) }}'"></h1>
                         
                         <div class="flex items-center flex-wrap gap-y-2 gap-x-4 text-xs font-bold uppercase tracking-wider text-gray-400 mb-6">
-                            <span class="flex items-center gap-1">{{ $media['format'] ?? 'OVA' }}</span>
+                            <span class="flex items-center gap-1">{{ $media->format ?? 'OVA' }}</span>
                             <span>•</span>
-                            <span>{{ $media['start_year'] ?? 'TBA' }}</span>
+                            <span>{{ $media->startYear ?? 'TBA' }}</span>
                             <span>•</span>
-                            <span>Temporada {{ $media['season'] ?? 'Desconocida' }}</span>
+                            <span>Temporada {{ $media->season ?? 'Desconocida' }}</span>
                             <span>•</span>
                             <div class="flex items-center gap-1.5 text-gray-300">
                                 En emisión <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
@@ -104,7 +104,7 @@
                         </div>
 
                         <div class="text-gray-400 text-sm leading-relaxed max-w-4xl text-justify font-medium">
-                            {!! strip_tags($media['description']) !!}
+                            {!! strip_tags($media->description) !!}
                         </div>
                     </div>
 
@@ -159,9 +159,9 @@
                     <div class="flex-1">
                         <div class="flex items-center gap-3 text-xs font-black uppercase text-gray-400 mb-3 tracking-widest">
                             <span class="bg-[#1f2533] border border-gray-800 px-2 py-0.5 rounded text-indigo-400">{{ $type }}</span>
-                            <span>{{ $media['format'] ?? 'UNKNOWN' }}</span>
+                            <span>{{ $media->format ?? 'UNKNOWN' }}</span>
                             <span>•</span>
-                            <span class="text-white">{{ $media['start_year'] ?? 'TBA' }}</span>
+                            <span class="text-white">{{ $media->startYear ?? 'TBA' }}</span>
                         </div>
                         <h1 class="text-4xl font-extrabold text-white mb-2 leading-tight">{{ $romaji }}</h1>
                         @if($native) <h2 class="text-xl text-gray-500 font-bold mb-6">{{ $native }}</h2> @endif
@@ -173,7 +173,7 @@
                         </div>
 
                         <div class="text-gray-400 leading-relaxed text-sm font-medium border-l-2 border-indigo-500/30 pl-4 bg-gray-900/30 p-2 rounded-r-lg max-w-3xl">
-                            {!! strip_tags($media['description']) !!}
+                            {!! strip_tags($media->description) !!}
                         </div>
                     </div>
                 </div>
@@ -201,17 +201,17 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                         @foreach($assets as $asset)
                             @php
-                                $assetCover = $asset['coverUrl'] ?? 'https://via.placeholder.com/300x400';
+                                $assetCover = $asset->coverUrl ?? 'https://via.placeholder.com/300x400';
                             @endphp
-                            <a href="{{ $asset['fileUrl'] }}" target="_blank" class="group bg-[#151921] border border-gray-800 rounded-xl overflow-hidden hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] relative flex flex-col">
+                            <a href="{{ $asset->fileUrl }}" target="_blank" class="group bg-[#151921] border border-gray-800 rounded-xl overflow-hidden hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.5)] relative flex flex-col">
                                 <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-black tracking-widest text-[#2dd4bf] uppercase border border-white/5 z-10">
-                                    {{ $asset['type'] }}
+                                    {{ $asset->type }}
                                 </div>
                                 <div class="aspect-[3/4] overflow-hidden bg-[#0a0c10] relative shrink-0">
                                     <img src="{{ $assetCover }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100">
                                 </div>
                                 <div class="p-3 flex-1 flex flex-col justify-between items-start gap-2 bg-[#11151d] border-t border-gray-800/50">
-                                    <h4 class="text-xs font-bold text-gray-300 line-clamp-2 leading-snug group-hover:text-white transition-colors" title="{{ $asset['title'] }}">{{ $asset['title'] }}</h4>
+                                    <h4 class="text-xs font-bold text-gray-300 line-clamp-2 leading-snug group-hover:text-white transition-colors" title="{{ $asset->title }}">{{ $asset->title }}</h4>
                                 </div>
                             </a>
                         @endforeach

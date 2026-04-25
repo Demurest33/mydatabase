@@ -1,11 +1,11 @@
 <x-layout>
-    <x-slot:title>{{ $character['name'] }} — Character</x-slot>
+    <x-slot:title>{{ $character->name }} — Character</x-slot>
 
     {{-- ── Blurred hero banner ── --}}
     <x-slot:banner>
         <div class="absolute top-0 inset-x-0 h-[420px] overflow-hidden pointer-events-none" style="z-index:0;">
             <div class="absolute inset-0 bg-cover bg-center scale-110"
-                 style="background-image:url('{{ $character['image'] ?? '' }}');
+                 style="background-image:url('{{ $character->image ?? '' }}');
                         filter:blur(24px);
                         opacity:0.35;
                         mask-image:linear-gradient(to bottom,black 40%,transparent 100%);
@@ -23,8 +23,8 @@
             {{-- Portrait --}}
             <div class="w-44 shrink-0 mx-auto sm:mx-0">
                 <div class="w-full aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] bg-gray-900">
-                    @if(!empty($character['image']))
-                        <img src="{{ $character['image'] }}" alt="{{ $character['name'] }}"
+                    @if(!empty($character->image))
+                        <img src="{{ $character->image }}" alt="{{ $character->name }}"
                              class="w-full h-full object-cover object-top">
                     @else
                         <div class="w-full h-full flex items-center justify-center text-gray-600">
@@ -41,21 +41,21 @@
             <div class="flex-1 flex flex-col justify-end pb-2">
                 <p class="text-amber-400 text-xs font-bold uppercase tracking-widest mb-2">Character Profile</p>
                 <h1 class="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
-                    {{ $character['name'] }}
+                    {{ $character->name }}
                 </h1>
 
                 {{-- Media badges --}}
                 @if(!empty($medias))
                 <div class="flex flex-wrap gap-2 mb-5">
                     @foreach($medias as $m)
-                    <a href="{{ route('media.show', $m['id']) }}"
+                    <a href="{{ route('media.show', $m->id) }}"
                        class="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full pl-1 pr-3 py-1 transition-colors">
-                        @if(!empty($m['coverImage']))
-                        <img src="{{ $m['coverImage'] }}" class="w-6 h-6 rounded-full object-cover flex-shrink-0">
+                        @if(!empty($m->coverImage))
+                        <img src="{{ $m->coverImage }}" class="w-6 h-6 rounded-full object-cover flex-shrink-0">
                         @endif
-                        <span class="text-xs font-semibold text-gray-300">{{ $m['title'] }}</span>
-                        @if(!empty($m['format']))
-                        <span class="text-[10px] text-gray-600">{{ $m['format'] }}</span>
+                        <span class="text-xs font-semibold text-gray-300">{{ $m->title }}</span>
+                        @if(!empty($m->format))
+                        <span class="text-[10px] text-gray-600">{{ $m->format }}</span>
                         @endif
                     </a>
                     @endforeach
@@ -88,31 +88,31 @@
                 </h2>
                 <div class="space-y-3">
                     @foreach($medias as $m)
-                    <a href="{{ route('media.show', $m['id']) }}"
+                    <a href="{{ route('media.show', $m->id) }}"
                        class="flex gap-4 bg-[#151921] border border-gray-800 rounded-2xl overflow-hidden
                               hover:border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-0.5
                               transition-all duration-200 group">
                         <div class="w-20 shrink-0 aspect-[2/3] bg-gray-900 overflow-hidden">
-                            @if(!empty($m['coverImage']))
-                            <img src="{{ $m['coverImage'] }}" alt="{{ $m['title'] }}"
+                            @if(!empty($m->coverImage))
+                            <img src="{{ $m->coverImage }}" alt="{{ $m->title }}"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                             @endif
                         </div>
                         <div class="flex flex-col justify-center py-3 pr-4 flex-1 min-w-0">
                             <h3 class="text-white font-bold text-sm line-clamp-2 leading-snug mb-1">
-                                {{ $m['title'] }}
+                                {{ $m->title }}
                             </h3>
                             <div class="flex items-center gap-2 flex-wrap">
-                                @if(!empty($m['format']))
+                                @if(!empty($m->format))
                                 <span class="text-[10px] font-bold bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
-                                    {{ $m['format'] }}
+                                    {{ $m->format }}
                                 </span>
                                 @endif
-                                @if(!empty($m['start_year']))
-                                <span class="text-xs text-gray-600">{{ $m['start_year'] }}</span>
+                                @if(!empty($m->startYear))
+                                <span class="text-xs text-gray-600">{{ $m->startYear }}</span>
                                 @endif
-                                @if(!empty($m['status']))
-                                <span class="text-xs text-gray-600">· {{ $m['status'] }}</span>
+                                @if(!empty($m->status))
+                                <span class="text-xs text-gray-600">· {{ $m->status }}</span>
                                 @endif
                             </div>
                         </div>
@@ -208,7 +208,7 @@
                         Upload Asset
                     </h2>
 
-                    <form action="{{ route('characters.assets.store', $character['id']) }}"
+                    <form action="{{ route('characters.assets.store', $character->id) }}"
                           method="POST" enctype="multipart/form-data" class="space-y-3">
                         @csrf
 
@@ -261,13 +261,13 @@
                                  style="scrollbar-width:thin;scrollbar-color:#374151 transparent;">
                                 @foreach($allCharacters as $char)
                                 <label class="char-tag-label flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
-                                       data-name="{{ strtolower($char['name']) }}">
-                                    <input type="checkbox" name="other_characters[]" value="{{ $char['id'] }}"
+                                       data-name="{{ strtolower($char->name) }}">
+                                    <input type="checkbox" name="other_characters[]" value="{{ $char->id }}"
                                            class="w-3 h-3 accent-amber-500 flex-shrink-0">
-                                    <img src="{{ $char['image'] ?? '' }}" alt=""
+                                    <img src="{{ $char->image ?? '' }}" alt=""
                                          class="w-5 h-5 rounded-full object-cover border border-gray-700 flex-shrink-0">
-                                    <span class="text-xs text-gray-400 truncate flex-1">{{ $char['name'] }}</span>
-                                    @if($char['priority'])
+                                    <span class="text-xs text-gray-400 truncate flex-1">{{ $char->name }}</span>
+                                    @if($char->priority)
                                     <span class="text-[9px] font-black text-amber-500/80 flex-shrink-0">★</span>
                                     @endif
                                 </label>
@@ -298,11 +298,11 @@
 
             <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
                 @foreach(array_slice($allCharacters, 0, 40) as $char)
-                <a href="{{ route('characters.show', $char['id']) }}"
+                <a href="{{ route('characters.show', $char->id) }}"
                    class="flex flex-col items-center text-center group hover:-translate-y-1 transition-transform duration-200">
                     <div class="w-full aspect-square rounded-xl overflow-hidden border border-gray-800 group-hover:border-amber-500/50 transition-colors mb-1.5 bg-gray-900">
-                        @if(!empty($char['image']))
-                        <img src="{{ $char['image'] }}" alt="{{ $char['name'] }}"
+                        @if(!empty($char->image))
+                        <img src="{{ $char->image }}" alt="{{ $char->name }}"
                              class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                              loading="lazy">
                         @else
@@ -315,9 +315,9 @@
                         @endif
                     </div>
                     <p class="text-[10px] font-semibold text-gray-400 group-hover:text-white line-clamp-2 leading-tight transition-colors w-full">
-                        {{ $char['name'] }}
+                        {{ $char->name }}
                     </p>
-                    @if($char['priority'])
+                    @if($char->priority)
                     <span class="text-[8px] font-black text-amber-500/70 mt-0.5">★ FRANCHISE</span>
                     @endif
                 </a>

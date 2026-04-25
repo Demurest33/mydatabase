@@ -83,12 +83,12 @@
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 gap-y-10">
         
         @forelse($franchises as $f)
-            <a href="{{ route('franchises.show', $f['name']) }}" class="group flex flex-col relative w-full">
+            <a href="{{ route('franchises.show', $f->name) }}" class="group flex flex-col relative w-full">
                 <!-- Cover Image Container -->
                 <div class="relative w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-lg border border-gray-800 bg-gray-900 mb-3 group-hover:border-emerald-500/50 group-hover:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.3)] transition-all duration-300 group-hover:-translate-y-2">
-                    
-                    @if($f['coverImage'])
-                        <img src="{{ $f['coverImage'] }}" alt="{{ $f['name'] }}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+
+                    @if($f->coverImage)
+                        <img src="{{ $f->coverImage }}" alt="{{ $f->name }}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
                     @else
                         <!-- No cover fallback -->
                         <div class="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-900/50 to-purple-900/50 flex items-center justify-center">
@@ -100,9 +100,9 @@
                     <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#030712] to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
 
                     <!-- Top Tags (e.g. Media Format if known) -->
-                    @if($f['primaryFormat'])
+                    @if($f->primaryFormat)
                         <div class="absolute top-2 left-2 bg-indigo-600/90 backdrop-blur-md text-white text-[10px] font-black tracking-widest px-2.5 py-1 rounded shadow-md uppercase">
-                            {{ $f['primaryFormat'] }}
+                            {{ $f->primaryFormat }}
                         </div>
                     @endif
 
@@ -110,12 +110,12 @@
                     <div class="absolute bottom-2 inset-x-2 flex justify-between items-center text-xs font-semibold text-white/90 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
                         <span class="flex items-center gap-1 drop-shadow-md">
                             <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> 
-                            {{ $f['charactersCount'] }}
+                            {{ $f->characterCount }}
                         </span>
                         
                         <span class="flex items-center gap-1 drop-shadow-md">
                             <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg> 
-                            {{ $f['assetsCount'] }}
+                            {{ $f->assetCount }}
                         </span>
                     </div>
 
@@ -124,7 +124,7 @@
                 <!-- Title outside of Cover -->
                 <div class="px-1">
                     <h3 class="text-sm font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-emerald-400 transition-colors">
-                        {{ $f['name'] }}
+                        {{ $f->name }}
                     </h3>
                 </div>
             </a>

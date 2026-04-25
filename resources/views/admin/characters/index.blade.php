@@ -85,11 +85,11 @@
                         @foreach($mediaItems as $media)
                         <label class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/5 cursor-pointer group/lbl">
                             <input type="checkbox"
-                                   value="{{ $media['id'] }}"
+                                   value="{{ $media->id }}"
                                    class="media-filter w-3 h-3 rounded flex-shrink-0 cursor-pointer accent-pink-500"
                                    checked>
                             <span class="text-xs text-gray-500 group-hover/lbl:text-gray-200 truncate transition-colors leading-tight">
-                                {{ $media['title'] }}
+                                {{ $media->title }}
                             </span>
                         </label>
                         @endforeach
@@ -142,14 +142,14 @@
                             <div class="char-card bg-[#151921] border border-gray-800 rounded-xl overflow-hidden
                                         hover:border-pink-500/40 hover:shadow-lg hover:shadow-pink-500/10
                                         transition-all duration-200 group/card flex flex-col"
-                                 data-name="{{ strtolower($char['name'] ?? '') }}"
-                                 data-media-ids="{{ implode(',', $char['mediaIds'] ?? []) }}">
+                                 data-name="{{ strtolower($char->name ?? '') }}"
+                                 data-media-ids="{{ implode(',', $char->mediaIds ?? []) }}">
 
                                 {{-- Portrait --}}
                                 <div class="aspect-[3/4] bg-gray-900 relative overflow-hidden flex-shrink-0">
-                                    @if(!empty($char['image']))
-                                        <img src="{{ $char['image'] }}"
-                                             alt="{{ $char['name'] }}"
+                                    @if(!empty($char->image))
+                                        <img src="{{ $char->image }}"
+                                             alt="{{ $char->name }}"
                                              class="w-full h-full object-cover object-top group-hover/card:scale-105 transition-transform duration-300"
                                              loading="lazy">
                                     @else
@@ -171,22 +171,22 @@
                                 {{-- Info --}}
                                 <div class="p-2.5 flex flex-col gap-0.5">
                                     <p class="text-white text-xs font-semibold line-clamp-2 leading-snug">
-                                        {{ $char['name'] ?? 'Unknown' }}
+                                        {{ $char->name ?? 'Unknown' }}
                                     </p>
-                                    @if(!empty($char['mediaTitle']))
-                                    <span class="text-gray-600 text-[10px] truncate">{{ $char['mediaTitle'] }}</span>
+                                    @if(!empty($char->mediaTitle))
+                                    <span class="text-gray-600 text-[10px] truncate">{{ $char->mediaTitle }}</span>
                                     @endif
                                 </div>
 
                                 {{-- Actions --}}
                                 <div class="opacity-0 group-hover/card:opacity-100 transition-opacity duration-150 px-2 pb-2.5 flex gap-1.5">
-                                    <a href="{{ route('admin.characters.edit', $char['id']) }}"
+                                    <a href="{{ route('admin.characters.edit', $char->id) }}"
                                        class="flex-1 text-center text-[10px] font-bold bg-pink-500/20 hover:bg-pink-500/40 text-pink-300 rounded-lg py-1.5 transition-colors">
                                         Editar
                                     </a>
-                                    <form action="{{ route('admin.characters.destroy', $char['id']) }}" method="POST"
+                                    <form action="{{ route('admin.characters.destroy', $char->id) }}" method="POST"
                                           class="flex-1"
-                                          data-name="{{ $char['name'] ?? 'this character' }}"
+                                          data-name="{{ $char->name ?? 'this character' }}"
                                           onsubmit="return confirm('¿Eliminar «' + this.dataset.name + '»?')">
                                         @csrf
                                         @method('DELETE')

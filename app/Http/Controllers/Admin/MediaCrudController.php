@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\DTOs\MediaDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
@@ -27,9 +28,9 @@ class MediaCrudController extends Controller
 
         $grouped = [];
         foreach ($result as $record) {
-            $media     = $record->get('m')->getProperties()->toArray();
+            $media     = MediaDTO::from($record->get('m')->getProperties()->toArray());
             $franchise = $record->get('franchise') ?? 'Sin franquicia';
-            $format    = $media['format'] ?? 'UNKNOWN';
+            $format    = $media->format ?? 'UNKNOWN';
 
             $grouped[$franchise][$format][] = $media;
         }

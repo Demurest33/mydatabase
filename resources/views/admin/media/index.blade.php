@@ -125,13 +125,13 @@
                             <div class="media-card bg-[#151921] border border-gray-800 rounded-xl overflow-hidden
                                         hover:border-indigo-500/40 hover:shadow-lg hover:shadow-indigo-500/10
                                         transition-all duration-200 group/card flex flex-col"
-                                 data-title="{{ strtolower($media['title'] ?? '') }}">
+                                 data-title="{{ strtolower($media->title ?? '') }}">
 
                                 {{-- Cover --}}
                                 <div class="aspect-[2/3] bg-gray-900 relative overflow-hidden flex-shrink-0">
-                                    @if(!empty($media['coverImage']))
-                                        <img src="{{ $media['coverImage'] }}"
-                                             alt="{{ $media['title'] }}"
+                                    @if(!empty($media->coverImage))
+                                        <img src="{{ $media->coverImage }}"
+                                             alt="{{ $media->title }}"
                                              class="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
                                              loading="lazy">
                                     @else
@@ -151,8 +151,8 @@
                                     </div>
 
                                     {{-- Status dot --}}
-                                    @if(!empty($media['status']))
-                                    @php $dotColor = match($media['status']) {
+                                    @if(!empty($media->status))
+                                    @php $dotColor = match($media->status) {
                                         'RELEASING'         => 'bg-green-400',
                                         'FINISHED'          => 'bg-gray-500',
                                         'NOT_YET_RELEASED'  => 'bg-yellow-400',
@@ -160,29 +160,29 @@
                                         default             => 'bg-gray-600',
                                     }; @endphp
                                     <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full {{ $dotColor }} ring-1 ring-black/60"
-                                          title="{{ $media['status'] }}"></span>
+                                          title="{{ $media->status }}"></span>
                                     @endif
                                 </div>
 
                                 {{-- Info --}}
                                 <div class="p-2.5 flex flex-col gap-0.5">
                                     <p class="text-white text-xs font-semibold line-clamp-2 leading-snug">
-                                        {{ $media['title'] ?? 'Unknown' }}
+                                        {{ $media->title ?? 'Unknown' }}
                                     </p>
-                                    @if(!empty($media['start_year']))
-                                    <span class="text-gray-600 text-[10px]">{{ $media['start_year'] }}</span>
+                                    @if(!empty($media->startYear))
+                                    <span class="text-gray-600 text-[10px]">{{ $media->startYear }}</span>
                                     @endif
                                 </div>
 
                                 {{-- Actions (visible on hover) --}}
                                 <div class="opacity-0 group-hover/card:opacity-100 transition-opacity duration-150 px-2 pb-2.5 flex gap-1.5">
-                                    <a href="{{ route('admin.media.edit', $media['id']) }}"
+                                    <a href="{{ route('admin.media.edit', $media->id) }}"
                                        class="flex-1 text-center text-[10px] font-bold bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 rounded-lg py-1.5 transition-colors">
                                         Editar
                                     </a>
-                                    <form action="{{ route('admin.media.destroy', $media['id']) }}" method="POST"
+                                    <form action="{{ route('admin.media.destroy', $media->id) }}" method="POST"
                                           class="flex-1"
-                                          data-title="{{ $media['title'] ?? 'this media' }}"
+                                          data-title="{{ $media->title ?? 'this media' }}"
                                           onsubmit="return confirm('¿Eliminar «' + this.dataset.title + '»?')">
                                         @csrf
                                         @method('DELETE')

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\AssetDTO;
+use App\DTOs\MediaDTO;
 use App\Services\Neo4jService;
 use Illuminate\Http\Request;
 use Exception;
@@ -20,71 +22,51 @@ class MediaController extends Controller
         try {
             $client = $this->neo4j->client();
 
-            // Match media and its elements
-            $query = '
+            $result = $client->run('
                 MATCH (m:Media {id: $id})
                 OPTIONAL MATCH (m)-[:HAS_ASSET]->(a:Asset)
                 OPTIONAL MATCH (m)-[:HAS_GENRE]->(g:Genre)
-                RETURN m, 
+                RETURN m,
                        collect(DISTINCT a) as assets,
                        collect(DISTINCT g.name) as genres
-            ';
-
-            $result = $client->run($query, ['id' => (int)$id]);
+            ', ['id' => (int) $id]);
 
             if ($result->isEmpty()) {
-                abort(404, "Media item not found in graph database.");
+                abort(404, 'Media item not found in graph database.');
             }
 
             $record = $result->first();
-            
-            // Validate that we actually got a Media node
-            $mNode = $record->get('m');
-            if ($mNode === null) {
-                abort(404, "Media item not found.");
-            }
-            
-            $media = $mNode->getProperties()->toArray();
-            
-            // Genres handling
-            $genres = array_filter($record->get('genres')->toArray());
-            
-            // Assets parsing and sorting
-            $assetsItems = $record->get('assets')->toArray();
-            $assets = [];
-            foreach ($assetsItems as $aNode) {
-                if ($aNode !== null) {
-                    $a = $aNode->getProperties()->toArray();
-                    
-                    // Format dates safely
-                    if (isset($a['createdAt']) && is_object($a['createdAt'])) {
-                        $a['createdAtStr'] = method_exists($a['createdAt'], 'toDateTime') 
-                            ? $a['createdAt']->toDateTime()->format('c') 
-                            : (string)$a['createdAt'];
-                    } else {
-                        $a['createdAtStr'] = $a['createdAt'] ?? now()->format('c');
-                    }
+            $mNode  = $record->get('m');
 
-                    // Extract actual URL dynamically 
-                    $a['fileUrl'] = $a['url'] ?? null;
-                    if (!$a['fileUrl'] && isset($a['filename'])) {
-                        $a['fileUrl'] = asset('storage/assets/' . $a['filename']);
-                    }
-                    if (isset($a['coverFilename'])) {
-                        $a['coverUrl'] = asset('storage/assets/covers/' . $a['coverFilename']);
-                    }
-                    
-                    $assets[] = $a;
-                }
+            if ($mNode === null) {
+                abort(404, 'Media item not found.');
             }
-            
-            // Sort assets ascending by Title so Episode 1, 2, 3 align. Fallback to ID/Creation if no title.
-            usort($assets, function($a, $b) {
-                $titleA = $a['title'] ?? $a['id'];
-                $titleB = $b['title'] ?? $b['id'];
-                // Use natural sort so 'Episode 10' comes after 'Episode 2'
-                return strnatcmp($titleA, $titleB);
-            });
+
+            $media = MediaDTO::from($mNode->getProperties()->toArray());
+
+            $genres = array_values(array_filter($record->get('genres')->toArray()));
+
+            $assets = [];
+            foreach ($record->get('assets')->toArray() as $aNode) {
+                if ($aNode === null) continue;
+
+                $a = $aNode->getProperties()->toArray();
+
+                // Normalise createdAt to a string before passing to DTO
+                if (isset($a['createdAt']) && is_object($a['createdAt'])) {
+                    $a['createdAtStr'] = method_exists($a['createdAt'], 'toDateTime')
+                        ? $a['createdAt']->toDateTime()->format('c')
+                        : (string) $a['createdAt'];
+                } else {
+                    $a['createdAtStr'] = $a['createdAt'] ?? now()->format('c');
+                }
+
+                $assets[] = AssetDTO::from($a);
+            }
+
+            usort($assets, fn(AssetDTO $a, AssetDTO $b) =>
+                strnatcmp($a->title ?? (string) $a->id, $b->title ?? (string) $b->id)
+            );
 
             return view('media.show', compact('media', 'genres', 'assets'));
 

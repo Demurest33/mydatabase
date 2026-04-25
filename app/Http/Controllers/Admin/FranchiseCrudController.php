@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\DTOs\FranchiseDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
@@ -30,11 +31,11 @@ class FranchiseCrudController extends Controller
 
         $franchises = [];
         foreach ($result as $record) {
-            $franchises[] = [
+            $franchises[] = FranchiseDTO::from([
                 'name'           => $record->get('name'),
                 'mediaCount'     => (int) $record->get('mediaCount'),
                 'characterCount' => (int) $record->get('characterCount'),
-            ];
+            ]);
         }
 
         return view('admin.franchises.index', compact('franchises'));

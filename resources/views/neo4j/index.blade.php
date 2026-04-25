@@ -1,7 +1,7 @@
 <x-layout>
     <x-slot:title>{{ $search ? 'Franquicia: ' . $search : 'Neo4j Timeline' }}</x-slot>
 
-    @if(isset($franchiseData) && !empty($franchiseData['root']))
+    @if($root !== null)
     
     @push('scripts')
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -11,7 +11,7 @@
         <div class="absolute top-0 inset-x-0 h-[450px] overflow-hidden pointer-events-none" style="z-index: 0;">
             <!-- Background Image -->
             <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60" 
-                 style="background-image: url('{{ $franchiseData['root']['bannerImage'] ?: $franchiseData['root']['coverImage']['large'] }}'); mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);">
+                 style="background-image: url('{{ $root->bannerImage ?: $root->coverImage }}'); mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);">
             </div>
             <!-- Overlay to blend with app dark background -->
             <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/80 to-transparent"></div>
@@ -27,7 +27,7 @@
             <div class="w-56 shrink-0 mx-auto md:mx-0 flex flex-col gap-6">
                 <!-- Cover -->
                 <div class="w-full aspect-[2/3] rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-gray-700/50 bg-gray-900 group">
-                    <img src="{{ $franchiseData['root']['coverImage']['large'] }}" alt="{{ $franchiseData['root']['title']['romaji'] }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                    <img src="{{ $root->coverImage }}" alt="{{ $root->title }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
                 </div>
                 
                 <!-- Extra Stats Sidebar -->
@@ -59,30 +59,30 @@
             <!-- Main Content: Title, Description, Genres -->
             <div class="flex-1 mt-0 md:mt-2">
                 <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-2 drop-shadow-md leading-tight">
-                    {{ $franchiseData['root']['title']['romaji'] }}
+                    {{ $root->title }}
                 </h1>
                 <h2 class="text-lg md:text-xl text-indigo-300/80 mb-6 font-light drop-shadow-sm">
-                    {{ $franchiseData['root']['title']['native'] }}
+                    {{ $root->native }}
                 </h2>
-                
-                @if(!empty($franchiseData['root']['description']))
+
+                @if(!empty($root->description))
                     <div class="text-gray-300/90 leading-relaxed text-sm md:text-base mb-8 line-clamp-6 hover:line-clamp-none transition-all duration-500">
-                        {!! $franchiseData['root']['description'] !!}
+                        {!! $root->description !!}
                     </div>
                 @endif
-                
-                @if(!empty($franchiseData['root']['genres']))
+
+                @if(!empty($root->genres))
                     <div class="mt-6 flex flex-wrap gap-2">
-                        @foreach($franchiseData['root']['genres'] as $genre)
+                        @foreach($root->genres as $genre)
                             <span class="px-3 py-1 bg-[#151921] text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-bold tracking-wide shadow-sm hover:bg-indigo-900/40 transition-colors cursor-default">{{ $genre }}</span>
                         @endforeach
                     </div>
                 @endif
-                
-                @if(!empty($franchiseData['root']['studios']['nodes']))
+
+                @if(!empty($root->studios))
                     <p class="mt-6 text-sm text-gray-500">
                         <span class="font-bold uppercase tracking-wider text-xs mr-2">Studios</span>
-                        {{ implode(', ', array_column($franchiseData['root']['studios']['nodes'], 'name')) }}
+                        {{ implode(', ', array_map(fn($s) => $s->name, $root->studios)) }}
                     </p>
                 @endif
             </div>
@@ -95,7 +95,7 @@
             <div class="flex-1 space-y-12">
 
                 <!-- TIMELINE -->
-                @if(count($franchiseData['timeline']) > 0)
+                @if(count($timeline) > 0)
                 <div>
                     <h3 class="text-xl font-bold text-white mb-8 flex items-center gap-3 border-b border-gray-800 pb-4">
                         <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -103,37 +103,37 @@
                     </h3>
                     
                     <div class="relative pl-6 md:pl-8 space-y-10 border-l-2 border-gray-800 ml-4 md:ml-6">
-                        @foreach($franchiseData['timeline'] as $item)
+                        @foreach($timeline as $item)
                             <div class="relative group">
                                 <!-- Dot -->
                                 <div class="absolute -left-[31px] md:-left-[39px] top-6 w-3 h-3 md:w-4 md:h-4 rounded-full bg-indigo-500 border-4 border-[#0f172a] shadow-[0_0_10px_rgba(99,102,241,0.6)] group-hover:scale-125 transition-transform z-10"></div>
-                                
-                                <a href="{{ route('media.show', $item['id']) }}" class="bg-[#151921] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row gap-6 shadow-sm hover:shadow-lg hover:border-indigo-500/30 hover:-translate-y-1 transition-all block">
+
+                                <a href="{{ route('media.show', $item->id) }}" class="bg-[#151921] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row gap-6 shadow-sm hover:shadow-lg hover:border-indigo-500/30 hover:-translate-y-1 transition-all block">
                                     <div class="w-24 md:w-32 shrink-0 relative rounded-lg overflow-hidden border border-gray-800 aspect-[2/3]">
-                                        <img src="{{ $item['coverImage']['large'] }}" class="w-full h-full object-cover">
-                                        <div class="absolute top-0 left-0 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 uppercase rounded-br-lg">{{ $item['startDate']['year'] ?? 'TBA' }}</div>
+                                        <img src="{{ $item->coverImage }}" class="w-full h-full object-cover">
+                                        <div class="absolute top-0 left-0 bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 uppercase rounded-br-lg">{{ $item->startYear ?? 'TBA' }}</div>
                                     </div>
                                     <div class="flex-1">
                                         <div class="flex justify-between items-start mb-2">
-                                            <h4 class="text-lg md:text-xl font-bold text-gray-100">{{ $item['title']['romaji'] }}</h4>
-                                            <span class="bg-gray-800 text-gray-300 text-xs font-bold px-2.5 py-1 rounded-md ml-2 shrink-0">{{ $item['format'] }}</span>
+                                            <h4 class="text-lg md:text-xl font-bold text-gray-100">{{ $item->title }}</h4>
+                                            <span class="bg-gray-800 text-gray-300 text-xs font-bold px-2.5 py-1 rounded-md ml-2 shrink-0">{{ $item->format }}</span>
                                         </div>
-                                        @if(!empty($item['description']))
-                                            <div class="text-sm text-gray-400 line-clamp-3 mb-4 prose prose-invert max-w-none">{!! $item['description'] !!}</div>
+                                        @if(!empty($item->description))
+                                            <div class="text-sm text-gray-400 line-clamp-3 mb-4 prose prose-invert max-w-none">{!! $item->description !!}</div>
                                         @endif
-                                        
+
                                         <!-- Character Avatars Preview -->
-                                        @if(!empty($item['characters']['edges']))
+                                        @if(!empty($item->characters))
                                             <div class="flex flex-wrap gap-2 mt-auto">
-                                                @foreach(array_slice($item['characters']['edges'], 0, 8) as $edge)
+                                                @foreach(array_slice($item->characters, 0, 8) as $edge)
                                                     <div class="group/char relative">
-                                                        <img src="{{ $edge['node']['image']['large'] ?? '' }}" class="w-8 h-8 rounded-full border border-gray-700 object-cover hover:border-indigo-400 transition-colors cursor-pointer">
-                                                        <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-xs px-2 py-1 rounded opacity-0 invisible group-hover/char:opacity-100 group-hover/char:visible transition-all whitespace-nowrap z-20 pointer-events-none">{{ $edge['node']['name']['full'] }}</div>
+                                                        <img src="{{ $edge->image ?? '' }}" class="w-8 h-8 rounded-full border border-gray-700 object-cover hover:border-indigo-400 transition-colors cursor-pointer">
+                                                        <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-xs px-2 py-1 rounded opacity-0 invisible group-hover/char:opacity-100 group-hover/char:visible transition-all whitespace-nowrap z-20 pointer-events-none">{{ $edge->name }}</div>
                                                     </div>
                                                 @endforeach
-                                                @if(count($item['characters']['edges']) > 8)
+                                                @if(count($item->characters) > 8)
                                                     <div class="w-8 h-8 rounded-full border border-gray-700 bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400">
-                                                        +{{ count($item['characters']['edges']) - 8 }}
+                                                        +{{ count($item->characters) - 8 }}
                                                     </div>
                                                 @endif
                                             </div>
@@ -147,7 +147,7 @@
                 @endif
             
                 <!-- SOURCE MATERIAL / RELATIONS LIKE ANILIST -->
-                @if(count($franchiseData['source']) > 0 || count($franchiseData['others']) > 0)
+                @if(count($source) > 0 || count($others) > 0)
                 <div class="bg-[#151921]/60 border border-white/5 p-6 rounded-2xl">
                     <h3 class="text-lg font-bold text-gray-200 mb-6 flex items-center gap-2">
                         <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
@@ -155,22 +155,22 @@
                     </h3>
                     
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        @php 
-                            $relations = array_merge($franchiseData['source'], $franchiseData['others']); 
+                        @php
+                            $relations = array_merge($source, $others);
                         @endphp
                         @foreach($relations as $item)
-                            <a href="{{ route('media.show', $item['id']) }}" class="group relative rounded-xl overflow-hidden bg-gray-900 border border-gray-800 transition-all hover:border-indigo-500 hover:-translate-y-1 hover:shadow-xl block">
-                                @if(in_array($item, $franchiseData['source']))
+                            <a href="{{ route('media.show', $item->id) }}" class="group relative rounded-xl overflow-hidden bg-gray-900 border border-gray-800 transition-all hover:border-indigo-500 hover:-translate-y-1 hover:shadow-xl block">
+                                @if(in_array($item, $source))
                                     <span class="absolute top-0 inset-x-0 z-10 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black text-[9px] font-black tracking-wider uppercase text-center py-1 border-b border-black/20">Source</span>
                                 @else
                                     <span class="absolute top-0 inset-x-0 z-10 bg-gradient-to-r from-gray-700 to-gray-600 text-white text-[9px] font-black tracking-wider uppercase text-center py-1 border-b border-black/20">Alternative</span>
                                 @endif
                                 
                                 <div class="aspect-[2/3] overflow-hidden bg-black">
-                                    <img src="{{ $item['coverImage']['large'] }}" alt="" class="w-full h-full object-cover transition-transform group-hover:scale-105 opacity-90 group-hover:opacity-100 mt-4">
+                                    <img src="{{ $item->coverImage }}" alt="" class="w-full h-full object-cover transition-transform group-hover:scale-105 opacity-90 group-hover:opacity-100 mt-4">
                                 </div>
                                 <div class="p-3 absolute bottom-0 inset-x-0 bg-gradient-to-t from-gray-950 via-gray-900/90 to-transparent pt-10 pb-2">
-                                    <h4 class="text-[11px] font-bold text-gray-300 line-clamp-2 leading-tight group-hover:text-indigo-400">{{ $item['title']['romaji'] }}</h4>
+                                    <h4 class="text-[11px] font-bold text-gray-300 line-clamp-2 leading-tight group-hover:text-indigo-400">{{ $item->title }}</h4>
                                 </div>
                             </a>
                         @endforeach
@@ -182,21 +182,21 @@
 
             <!-- RIGHT COLUMN: MAIN CHARACTERS GRID (if we want to show characters of the franchise) -->
             <!-- We can extract main characters from the root media to populate a character grid -->
-            @if(!empty($franchiseData['root']['characters']['edges']))
+            @if(!empty($root->characters))
             <div class="w-full lg:w-80 shrink-0">
                 <h3 class="text-lg font-bold text-white mb-6 border-b border-gray-800 pb-4">Main Characters</h3>
                 <div class="grid grid-cols-2 gap-3">
                     @php
                         // Filter to show mostly ROLE MAIN from the root, or just take first 10
-                        $rootChars = collect($franchiseData['root']['characters']['edges'])->sortBy(function($a) {
-                            return $a['role'] === 'MAIN' ? 0 : 1;
+                        $rootChars = collect($root->characters)->sortBy(function($a) {
+                            return $a->role === 'MAIN' ? 0 : 1;
                         })->take(12);
                     @endphp
-                    @foreach($rootChars as $char)
-                        <a href="{{ route('characters.show', $char['node']['id']) }}" class="bg-[#151921] border border-white/5 rounded-lg overflow-hidden flex flex-col items-center p-3 hover:border-indigo-500/50 transition-colors group text-center block">
-                            <img src="{{ $char['node']['image']['large'] }}" class="w-16 h-16 rounded-full object-cover mb-3 border-2 border-gray-800 group-hover:border-indigo-500 transition-colors">
-                            <h5 class="text-xs font-bold text-gray-200 line-clamp-1 w-full">{{ $char['node']['name']['full'] }}</h5>
-                            <span class="text-[9px] font-black text-indigo-400/80 uppercase mt-1">{{ $char['role'] }}</span>
+                    @foreach($rootChars as $charEdge)
+                        <a href="{{ route('characters.show', $charEdge->id) }}" class="bg-[#151921] border border-white/5 rounded-lg overflow-hidden flex flex-col items-center p-3 hover:border-indigo-500/50 transition-colors group text-center block">
+                            <img src="{{ $charEdge->image }}" class="w-16 h-16 rounded-full object-cover mb-3 border-2 border-gray-800 group-hover:border-indigo-500 transition-colors">
+                            <h5 class="text-xs font-bold text-gray-200 line-clamp-1 w-full">{{ $charEdge->name }}</h5>
+                            <span class="text-[9px] font-black text-indigo-400/80 uppercase mt-1">{{ $charEdge->role }}</span>
                         </a>
                     @endforeach
                 </div>
@@ -208,34 +208,28 @@
         @php
             $allCharactersList = [];
             $seenIds = [];
-            
+
             $checkMedia = function($mediaList) use (&$allCharactersList, &$seenIds) {
                 foreach ($mediaList as $item) {
-                    if (!empty($item['characters']['edges'])) {
-                        foreach ($item['characters']['edges'] as $edge) {
-                            $id = $edge['node']['id'] ?? null;
-                            if ($id && !isset($seenIds[$id])) {
-                                $seenIds[$id] = true;
-                                $allCharactersList[] = [
-                                    'id' => $id,
-                                    'name' => $edge['node']['name']['full'] ?? 'Unknown',
-                                    'image' => $edge['node']['image']['large'] ?? '',
-                                    'role' => $edge['role']
-                                ];
+                    if (!empty($item->characters)) {
+                        foreach ($item->characters as $edge) {
+                            if (!isset($seenIds[$edge->id])) {
+                                $seenIds[$edge->id] = true;
+                                $allCharactersList[] = $edge;
                             }
                         }
                     }
                 }
             };
-            
-            $checkMedia($franchiseData['timeline']);
-            $checkMedia($franchiseData['source']);
-            $checkMedia($franchiseData['others']);
-            
+
+            $checkMedia($timeline);
+            $checkMedia($source);
+            $checkMedia($others);
+
             usort($allCharactersList, function($a, $b) {
-                if ($a['role'] === 'MAIN' && $b['role'] !== 'MAIN') return -1;
-                if ($b['role'] === 'MAIN' && $a['role'] !== 'MAIN') return 1;
-                return strnatcmp($a['name'], $b['name']);
+                if ($a->role === 'MAIN' && $b->role !== 'MAIN') return -1;
+                if ($b->role === 'MAIN' && $a->role !== 'MAIN') return 1;
+                return strnatcmp($a->name, $b->name);
             });
         @endphp
 
@@ -256,18 +250,18 @@
             
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                 @foreach($allCharactersList as $char)
-                    <a href="{{ route('characters.show', $char['id']) }}" 
-                       x-show="search === '' || '{{ strtolower(addslashes($char['name'])) }}'.includes(search.toLowerCase())"
+                    <a href="{{ route('characters.show', $char->id) }}"
+                       x-show="search === '' || '{{ strtolower(addslashes($char->name)) }}'.includes(search.toLowerCase())"
                        class="bg-[#11151d] border border-gray-800 rounded-xl overflow-hidden hover:border-indigo-500 transition-all hover:-translate-y-1 hover:shadow-lg group flex flex-col">
                         <div class="aspect-[3/4] relative overflow-hidden bg-gray-900">
-                            <img src="{{ $char['image'] }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
-                            @if($char['role'] === 'MAIN')
+                            <img src="{{ $char->image }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                            @if($char->role === 'MAIN')
                                 <div class="absolute top-0 right-0 bg-indigo-600 text-[9px] font-black uppercase px-2 py-0.5 rounded-bl text-white shadow-sm">MAIN</div>
                             @endif
                         </div>
                         <div class="p-3 text-center flex-1 flex flex-col justify-center">
-                            <h4 class="text-[11px] font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors">{{ $char['name'] }}</h4>
-                            <span class="text-[9px] font-black text-indigo-400/80 uppercase mt-1 block">{{ $char['role'] }}</span>
+                            <h4 class="text-[11px] font-bold text-gray-200 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors">{{ $char->name }}</h4>
+                            <span class="text-[9px] font-black text-indigo-400/80 uppercase mt-1 block">{{ $char->role }}</span>
                         </div>
                     </a>
                 @endforeach

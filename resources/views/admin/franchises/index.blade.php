@@ -63,14 +63,14 @@
 
         @foreach($franchises as $f)
         @php
-            $initial     = mb_strtoupper(mb_substr($f['name'], 0, 1));
+            $initial     = mb_strtoupper(mb_substr($f->name, 0, 1));
             $colorClass  = $avatarColors[ord($initial) % count($avatarColors)];
         @endphp
 
         <div class="franchise-card bg-[#151921] border border-gray-800 rounded-2xl p-4
                     hover:border-indigo-500/40 hover:shadow-lg hover:shadow-indigo-500/10
                     transition-all duration-200 group flex flex-col gap-3"
-             data-name="{{ strtolower($f['name']) }}">
+             data-name="{{ strtolower($f->name) }}">
 
             {{-- Top: avatar + name --}}
             <div class="flex items-center gap-3">
@@ -79,7 +79,7 @@
                     {{ $initial }}
                 </div>
                 <span class="text-white font-bold text-sm leading-snug line-clamp-2">
-                    {{ $f['name'] }}
+                    {{ $f->name }}
                 </span>
             </div>
 
@@ -90,26 +90,26 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4"/>
                     </svg>
-                    {{ $f['mediaCount'] }} media
+                    {{ $f->mediaCount }} media
                 </span>
                 <span class="flex items-center gap-1 text-xs text-gray-500 bg-gray-800/60 px-2 py-1 rounded-lg">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
-                    {{ $f['characterCount'] }} chars
+                    {{ $f->characterCount }} chars
                 </span>
             </div>
 
             {{-- Actions (visible on hover) --}}
             <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex gap-2 mt-auto pt-1 border-t border-gray-800">
-                <a href="{{ route('admin.franchises.edit', $f['name']) }}"
+                <a href="{{ route('admin.franchises.edit', $f->name) }}"
                    class="flex-1 text-center text-xs font-bold bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 rounded-lg py-1.5 transition-colors">
                     Editar
                 </a>
-                <form action="{{ route('admin.franchises.destroy', $f['name']) }}" method="POST"
+                <form action="{{ route('admin.franchises.destroy', $f->name) }}" method="POST"
                       class="flex-1"
-                      data-name="{{ $f['name'] }}"
+                      data-name="{{ $f->name }}"
                       onsubmit="return confirm('¿Eliminar la franquicia «' + this.dataset.name + '»? Se eliminarán todas sus relaciones.')">
                     @csrf
                     @method('DELETE')

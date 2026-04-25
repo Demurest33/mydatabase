@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Actions\GetFranchiseNamesAction;
+use App\DTOs\CharacterEdgeDTO;
+use App\DTOs\FranchiseDTO;
+use App\DTOs\MediaDTO;
+use App\DTOs\StudioDTO;
 use App\Services\Neo4jService;
 use Illuminate\Http\Request;
 use Exception;
@@ -16,14 +20,19 @@ class FranchiseController extends Controller
         $this->neo4j = $neo4j;
     }
 
+    // ── Public franchise detail ──────────────────────────────────────────────
+
     public function show(string $name)
     {
-        $franchises    = [];
-        $franchiseData = null;
-        $error         = null;
+        $franchises = [];
+        $root       = null;
+        $timeline   = [];
+        $source     = [];
+        $others     = [];
+        $error      = null;
 
         try {
-            $franchises = app(\App\Actions\GetFranchiseNamesAction::class)->execute();
+            $franchises = app(GetFranchiseNamesAction::class)->execute();
 
             $client = $this->neo4j->client();
             $result = $client->run('
@@ -32,77 +41,68 @@ class FranchiseController extends Controller
                 OPTIONAL MATCH (m)-[:HAS_GENRE]->(g:Genre)
                 OPTIONAL MATCH (m)-[rc:HAS_CHARACTER]->(c:Character)
                 RETURN m,
-                       collect(DISTINCT s) as studios,
-                       collect(DISTINCT g) as genres,
-                       collect(DISTINCT {node: c, role: rc.role}) as characters
+                       collect(DISTINCT s)                          as studios,
+                       collect(DISTINCT g)                          as genres,
+                       collect(DISTINCT {node: c, role: rc.role})   as characters
                 ORDER BY m.start_year ASC, m.start_month ASC, m.start_day ASC
             ', ['name' => $name]);
 
-            $timeline = [];
-            $source   = [];
-            $others   = [];
-            $root     = null;
-
             foreach ($result as $record) {
-                $props         = $record->get('m')->getProperties()->toArray();
-                $studiosNodes  = array_filter($record->get('studios')->toArray(), fn($n) => $n !== null);
-                $genresNodes   = array_filter($record->get('genres')->toArray(), fn($n) => $n !== null);
-                $characterEdges = array_filter($record->get('characters')->toArray(), fn($e) => $e['node'] !== null);
+                $props = $record->get('m')->getProperties()->toArray();
 
-                $item = [
-                    'id'           => $props['id'],
-                    'title'        => ['romaji' => $props['title'] ?? 'N/A', 'native' => $props['native'] ?? 'N/A'],
-                    'description'  => $props['description'] ?? '',
-                    'format'       => $props['format'] ?? '',
-                    'status'       => $props['status'] ?? '',
-                    'type'         => $props['type'] ?? '',
-                    'averageScore' => $props['score'] ?? 0,
-                    'season'       => $props['season'] ?? '',
-                    'seasonYear'   => $props['year'] ?? '',
-                    'coverImage'   => ['large' => $props['coverImage'] ?? ''],
-                    'bannerImage'  => $props['bannerImage'] ?? '',
-                    'startDate'    => ['year' => $props['start_year'] ?? null, 'month' => $props['start_month'] ?? null, 'day' => $props['start_day'] ?? null],
-                    'genres'       => array_map(fn($g) => $g->getProperties()->toArray()['name'], $genresNodes),
-                    'studios'      => ['nodes' => array_map(fn($s) => $s->getProperties()->toArray(), $studiosNodes)],
-                    'characters'   => ['edges' => array_map(function ($edge) {
-                        $p = $edge['node']->getProperties()->toArray();
-                        return ['role' => $edge['role'], 'node' => ['id' => $p['id'] ?? null, 'name' => ['full' => $p['name']], 'image' => ['large' => $p['image'] ?? '']]];
-                    }, $characterEdges)],
-                ];
+                $studios = array_filter($record->get('studios')->toArray(), fn($n) => $n !== null);
+                $genres  = array_filter($record->get('genres')->toArray(),  fn($n) => $n !== null);
+                $chars   = array_filter($record->get('characters')->toArray(), fn($e) => $e['node'] !== null);
+
+                $studiosDTOs = array_values(array_map(
+                    fn($s) => StudioDTO::from($s->getProperties()->toArray()),
+                    $studios
+                ));
+
+                $genreNames = array_values(array_map(
+                    fn($g) => $g->getProperties()->toArray()['name'] ?? '',
+                    $genres
+                ));
+
+                $charEdges = array_values(array_map(function ($edge) {
+                    $p = $edge['node']->getProperties()->toArray();
+                    return CharacterEdgeDTO::from([
+                        'id'    => $p['id']    ?? 0,
+                        'name'  => $p['name']  ?? '',
+                        'image' => $p['image'] ?? null,
+                        'role'  => $edge['role'] ?? 'SUPPORTING',
+                    ]);
+                }, $chars));
+
+                $media = MediaDTO::from($props, $genreNames, $studiosDTOs, $charEdges);
 
                 $tag = $props['tag'] ?? 'main';
-                if ($tag === 'source')     $source[]   = $item;
-                elseif ($tag === 'other') $others[]   = $item;
-                else                      $timeline[] = $item;
+                if ($tag === 'source')     $source[]   = $media;
+                elseif ($tag === 'other') $others[]   = $media;
+                else                      $timeline[] = $media;
 
-                if ($root === null) $root = $item;
+                $root ??= $media;
             }
-
-            $franchiseData = compact('timeline', 'source', 'others', 'root');
 
         } catch (Exception $e) {
             $error = 'Error: ' . $e->getMessage();
         }
 
-        return view('neo4j.index', [
-            'franchises'    => $franchises,
-            'franchiseData' => $franchiseData,
-            'search'        => $name,
-            'error'         => $error,
-        ]);
+        // $search kept for backward-compat with the shared neo4j.index view
+        return view('neo4j.index', compact('franchises', 'root', 'timeline', 'source', 'others', 'error') + ['search' => $name]);
     }
+
+    // ── Public franchise catalogue ───────────────────────────────────────────
 
     public function index(Request $request)
     {
         $letter = $request->input('letter');
-        $genre = $request->input('genre');
-        $sort = $request->input('sort', 'default');
-        
+        $genre  = $request->input('genre');
+        $sort   = $request->input('sort', 'default');
+
         try {
             $client = $this->neo4j->client();
 
-            // 1. Fetch available Genres for the dropdown. 
-            // We find all Media that belongs to a Franchise, UNWIND their genres and collect distinct.
             $genresResult = $client->run('
                 MATCH (f:Franchise)-[:HAS_ENTRY]->(m:Media)
                 WHERE m.genres IS NOT NULL
@@ -114,14 +114,11 @@ class FranchiseController extends Controller
                 $allGenres[] = $rec->get('g');
             }
 
-            // 2. Build Query
-            $params = [];
-            $matchClause = 'MATCH (f:Franchise)';
+            $params       = [];
             $whereClauses = [];
 
             if ($letter && preg_match('/^[A-Z\#]$/i', $letter)) {
                 if ($letter === '#') {
-                    // Start with a number or symbol
                     $whereClauses[] = 'f.name =~ "^[^a-zA-Z].*"';
                 } else {
                     $whereClauses[] = 'toLower(substring(f.name, 0, 1)) = toLower($letter)';
@@ -130,30 +127,26 @@ class FranchiseController extends Controller
             }
 
             if ($genre) {
-                // Must have at least one media with this genre
                 $whereClauses[] = 'EXISTS { MATCH (f)-[:HAS_ENTRY]->(gm:Media) WHERE $genre IN gm.genres }';
                 $params['genre'] = $genre;
             }
 
-            $whereStr = count($whereClauses) > 0 ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
+            $whereStr = $whereClauses ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
 
-            // Order By logic
-            // We can sort by name, mediaCount, characterCount
-            $orderStr = 'ORDER BY f.name ASC';
-            if ($sort === 'assets_desc') {
-                $orderStr = 'ORDER BY assetsCount DESC, f.name ASC';
-            } elseif ($sort === 'chars_desc') {
-                $orderStr = 'ORDER BY charactersCount DESC, f.name ASC';
-            }
+            $orderStr = match ($sort) {
+                'assets_desc' => 'ORDER BY assetsCount DESC, f.name ASC',
+                'chars_desc'  => 'ORDER BY charactersCount DESC, f.name ASC',
+                default       => 'ORDER BY f.name ASC',
+            };
 
             $query = "
-                $matchClause
+                MATCH (f:Franchise)
                 $whereStr
                 OPTIONAL MATCH (f)-[:HAS_ENTRY]->(m:Media)
                 OPTIONAL MATCH (m)-[:HAS_CHARACTER]->(c:Character)
                 OPTIONAL MATCH (c)-[:HAS_ASSET]->(a:Asset)
-                WITH f, 
-                     count(DISTINCT m) as mediaCount, 
+                WITH f,
+                     count(DISTINCT m) as mediaCount,
                      count(DISTINCT c) as charactersCount,
                      count(DISTINCT a) as assetsCount,
                      coalesce(f.image, collect(DISTINCT m.coverImage)[0]) as coverImage,
@@ -163,18 +156,18 @@ class FranchiseController extends Controller
                 LIMIT 100
             ";
 
-            $result = $client->run($query, $params);
-
+            $result     = $client->run($query, $params);
             $franchises = [];
+
             foreach ($result as $rec) {
-                $f = $rec->get('f')->getProperties()->toArray();
-                $f['mediaCount'] = $rec->get('mediaCount');
-                $f['charactersCount'] = $rec->get('charactersCount');
-                $f['assetsCount'] = $rec->get('assetsCount');
-                $f['coverImage'] = $rec->get('coverImage');
-                $f['primaryFormat'] = $rec->get('primaryFormat'); // e.g. "TV", "MANGA"
-                
-                $franchises[] = $f;
+                $franchises[] = FranchiseDTO::from([
+                    'name'           => $rec->get('f')->getProperties()->toArray()['name'],
+                    'mediaCount'     => (int) $rec->get('mediaCount'),
+                    'characterCount' => (int) $rec->get('charactersCount'),
+                    'assetCount'     => (int) $rec->get('assetsCount'),
+                    'coverImage'     => $rec->get('coverImage'),
+                    'primaryFormat'  => $rec->get('primaryFormat'),
+                ]);
             }
 
             return view('franchises.index', compact('franchises', 'allGenres', 'letter', 'genre', 'sort'));

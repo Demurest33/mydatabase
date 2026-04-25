@@ -66,11 +66,11 @@
                         @foreach($mediaItems as $media)
                         <label class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/5 cursor-pointer group/lbl">
                             <input type="checkbox"
-                                   value="{{ $media['id'] }}"
+                                   value="{{ $media->id }}"
                                    class="media-filter w-3 h-3 rounded flex-shrink-0 cursor-pointer accent-amber-500"
                                    checked>
                             <span class="text-xs text-gray-500 group-hover/lbl:text-gray-200 truncate transition-colors leading-tight">
-                                {{ $media['title'] }}
+                                {{ $media->title }}
                             </span>
                         </label>
                         @endforeach
@@ -120,18 +120,18 @@
 
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                             @foreach($characters as $char)
-                            <a href="{{ route('characters.show', $char['id']) }}"
+                            <a href="{{ route('characters.show', $char->id) }}"
                                class="char-card bg-[#151921] border border-gray-800 rounded-xl overflow-hidden
                                       hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10
                                       hover:-translate-y-1 transition-all duration-200 flex flex-col"
-                               data-name="{{ strtolower($char['name'] ?? '') }}"
-                               data-media-ids="{{ implode(',', $char['mediaIds'] ?? []) }}">
+                               data-name="{{ strtolower($char->name ?? '') }}"
+                               data-media-ids="{{ implode(',', $char->mediaIds ?? []) }}">
 
                                 {{-- Portrait --}}
                                 <div class="aspect-[3/4] bg-gray-900 relative overflow-hidden flex-shrink-0">
-                                    @if(!empty($char['image']))
-                                        <img src="{{ $char['image'] }}"
-                                             alt="{{ $char['name'] }}"
+                                    @if(!empty($char->image))
+                                        <img src="{{ $char->image }}"
+                                             alt="{{ $char->name }}"
                                              class="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
                                              loading="lazy">
                                     @else
@@ -154,10 +154,10 @@
                                 {{-- Info --}}
                                 <div class="p-2.5 flex flex-col gap-0.5">
                                     <p class="text-white text-xs font-semibold line-clamp-2 leading-snug">
-                                        {{ $char['name'] ?? 'Unknown' }}
+                                        {{ $char->name ?? 'Unknown' }}
                                     </p>
-                                    @if(!empty($char['mediaTitle']))
-                                    <span class="text-gray-600 text-[10px] truncate">{{ $char['mediaTitle'] }}</span>
+                                    @if(!empty($char->mediaTitle))
+                                    <span class="text-gray-600 text-[10px] truncate">{{ $char->mediaTitle }}</span>
                                     @endif
                                 </div>
                             </a>

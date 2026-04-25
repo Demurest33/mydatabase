@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\DTOs\AppearanceDTO;
+use App\DTOs\CharacterDTO;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
@@ -34,47 +36,47 @@ class CharacterCrudController extends Controller
 
         $roleOrder      = ['MAIN' => 0, 'SUPPORTING' => 1, 'BACKGROUND' => 2];
         $grouped        = [];
-        $franchiseMedia = []; // franchise → [mediaId => {id, title}]
+        $franchiseMedia = [];
 
         foreach ($result as $record) {
-            $char = $record->get('c')->getProperties()->toArray();
-            $apps = [];
+            $props = $record->get('c')->getProperties()->toArray();
+            $apps  = [];
 
             foreach ($record->get('appearances') as $app) {
                 $franchise = $app['franchise'] ?? null;
                 $mediaId   = (string) ($app['mediaId'] ?? '');
                 if (!$franchise || !$mediaId) continue;
 
-                $apps[] = [
+                $apps[] = AppearanceDTO::from([
                     'mediaId'    => $mediaId,
                     'mediaTitle' => (string) ($app['mediaTitle'] ?? ''),
-                    'role'       => (string) ($app['role'] ?? 'UNKNOWN'),
+                    'role'       => (string) ($app['role']       ?? 'UNKNOWN'),
                     'franchise'  => (string) $franchise,
-                ];
+                ]);
 
-                // Build sidebar lookup (deduplicated by media ID)
-                $franchiseMedia[$franchise][$mediaId] ??= [
+                $franchiseMedia[$franchise][$mediaId] ??= (object) [
                     'id'    => $mediaId,
                     'title' => (string) ($app['mediaTitle'] ?? ''),
                 ];
             }
 
             if (empty($apps)) {
-                $char['mediaIds'] = [];
-                $grouped['Sin franquicia']['UNKNOWN'][] = $char;
+                $grouped['Sin franquicia']['UNKNOWN'][] = CharacterDTO::from($props);
                 continue;
             }
 
-            // Primary appearance = highest-priority role
-            usort($apps, fn($a, $b) =>
-                ($roleOrder[$a['role']] ?? 99) <=> ($roleOrder[$b['role']] ?? 99)
+            usort($apps, fn(AppearanceDTO $a, AppearanceDTO $b) =>
+                ($roleOrder[$a->role] ?? 99) <=> ($roleOrder[$b->role] ?? 99)
             );
 
-            $primary           = $apps[0];
-            $char['mediaIds']  = array_values(array_unique(array_column($apps, 'mediaId')));
-            $char['mediaTitle'] = $primary['mediaTitle'];
+            $primary = $apps[0];
+            $char    = CharacterDTO::from($props + [
+                'mediaIds'   => array_values(array_unique(array_map(fn(AppearanceDTO $a) => $a->mediaId, $apps))),
+                'mediaTitle' => $primary->mediaTitle,
+                'role'       => $primary->role,
+            ]);
 
-            $grouped[$primary['franchise']][$primary['role']][] = $char;
+            $grouped[$primary->franchise][$primary->role][] = $char;
         }
 
         ksort($grouped);

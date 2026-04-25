@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('wallpaper_import_logs', function (Blueprint $table) {
+            $table->id();
+            $table->string('batch_id', 36)->index();
+            $table->string('workshop_id');
+            $table->enum('status', ['skipped', 'failed']);
+            $table->string('reason');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('wallpaper_import_logs');
+    }
+};

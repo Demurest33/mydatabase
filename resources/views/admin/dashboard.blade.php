@@ -44,5 +44,14 @@
             <h3 class="text-xl font-bold text-white mb-2">Characters</h3>
             <p class="text-sm text-gray-500">Manage database characters and their associations.</p>
         </a>
+
+        <!-- Wallpaper Bulk Import -->
+        <a href="{{ route('admin.wallpaper-import') }}" class="bg-[#151921] border border-gray-800 rounded-2xl p-6 hover:border-teal-500 transition-all hover:-translate-y-1 group relative overflow-hidden">
+            <div class="w-12 h-12 bg-teal-500/10 rounded-xl flex items-center justify-center text-teal-400 mb-4 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Wallpaper Import</h3>
+            <p class="text-sm text-gray-500">Importa todos tus wallpapers de Steam Workshop en bulk.</p>
+        </a>
     </div>
 </x-admin-layout>

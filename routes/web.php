@@ -41,6 +41,12 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 
     Route::get('/assets', [\App\Http\Controllers\Admin\AssetCrudController::class, 'index'])->name('admin.assets.index');
     Route::get('/steam-preview', [\App\Http\Controllers\Admin\SteamScraperController::class, 'preview'])->name('admin.steam.preview');
+    Route::get('/steam-settings', [\App\Http\Controllers\Admin\SteamSettingsController::class, 'index'])->name('admin.steam-settings');
+    Route::post('/steam-settings', [\App\Http\Controllers\Admin\SteamSettingsController::class, 'store'])->name('admin.steam-settings.save');
+    Route::delete('/steam-settings', [\App\Http\Controllers\Admin\SteamSettingsController::class, 'clear'])->name('admin.steam-settings.clear');
+    Route::get('/wallpaper-import', [\App\Http\Controllers\Admin\WallpaperImportController::class, 'index'])->name('admin.wallpaper-import');
+    Route::post('/wallpaper-import', [\App\Http\Controllers\Admin\WallpaperImportController::class, 'store'])->name('admin.wallpaper-import.store');
+    Route::get('/wallpaper-import/progress/{batchId}', [\App\Http\Controllers\Admin\WallpaperImportController::class, 'progress'])->name('admin.wallpaper-import.progress');
     Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
     Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
     Route::get('/assets/{id}/edit', [\App\Http\Controllers\Admin\AssetCrudController::class, 'edit'])->name('admin.assets.edit');

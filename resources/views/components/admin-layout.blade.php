@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'NeoGraph Backoffice' }} — Admin</title>
+    <title>{{ $title ?? 'mydatabase Backoffice' }} — Admin</title>
+    <link rel="icon" href="/favicon.ico">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +22,7 @@
 
     <footer class="border-t border-white/5 bg-black/20 py-4 mt-auto">
         <div class="max-w-7xl mx-auto px-4 text-center text-gray-700 text-xs">
-            NeoGraph Backoffice
+            mydatabase Backoffice
         </div>
     </footer>
 

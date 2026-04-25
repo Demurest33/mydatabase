@@ -12,7 +12,7 @@
                         </svg>
                     </div>
                     <div class="leading-tight">
-                        <span class="block text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">NeoGraph</span>
+                        <span class="block text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">mydatabase</span>
                         <span class="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest -mt-0.5">Backoffice</span>
                     </div>
                 </a>

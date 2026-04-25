@@ -10,7 +10,7 @@
                         </svg>
                     </div>
                     <span class="font-bold text-xl tracking-tight text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-purple-400 transition-colors">
-                        NeoGraph
+                        mydatabase
                     </span>
                 </a>
             </div>

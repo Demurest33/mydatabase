@@ -70,7 +70,7 @@ class FranchiseCrudController extends Controller
         $client->run('CREATE (f:Franchise {name: $name})', ['name' => $request->input('name')]);
 
         Cache::forget('franchises.genres');
-        Cache::forgetMultiple(CacheKeys::onFranchiseChange($request->input('name')));
+        CacheKeys::forget(CacheKeys::onFranchiseChange($request->input('name')));
 
         return redirect()->route('admin.franchises.index')->with('success', 'Franchise created successfully.');
     }
@@ -96,7 +96,7 @@ class FranchiseCrudController extends Controller
         );
 
         Cache::forget('franchises.genres');
-        Cache::forgetMultiple(array_unique(array_merge(
+        CacheKeys::forget(array_unique(array_merge(
             CacheKeys::onFranchiseChange($name),
             CacheKeys::onFranchiseChange($newName)
         )));
@@ -112,7 +112,7 @@ class FranchiseCrudController extends Controller
         );
 
         Cache::forget('franchises.genres');
-        Cache::forgetMultiple(CacheKeys::onFranchiseChange($name));
+        CacheKeys::forget(CacheKeys::onFranchiseChange($name));
 
         return redirect()->route('admin.franchises.index')->with('success', 'Franchise deleted.');
     }

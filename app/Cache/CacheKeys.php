@@ -2,6 +2,7 @@
 
 namespace App\Cache;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -120,6 +121,14 @@ final class CacheKeys
             self::FRANCHISES_CATALOGUE,
             self::ADMIN_FRANCHISES_INDEX,
         ];
+    }
+
+    /** Forget multiple keys — works on any cache driver including database. */
+    public static function forget(array $keys): void
+    {
+        foreach (array_unique($keys) as $key) {
+            Cache::forget($key);
+        }
     }
 
     /**

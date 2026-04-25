@@ -83,78 +83,13 @@
 
     <!-- Asset Masonry / Grid -->
     <div class="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-        
         @forelse($assets as $asset)
-            <a href="{{ $asset['fileUrl'] ?? '#' }}" target="_blank" class="block group relative break-inside-avoid bg-gray-900 rounded-lg overflow-hidden shadow-lg border border-gray-800 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-indigo-500/20 hover:-translate-y-1">
-                
-                @php
-                    $isVisual = in_array($asset['type'], ['IMG', 'GIF']);
-                    $hasCover = !empty($asset['coverUrl']);
-                    $displayUrl = $hasCover ? $asset['coverUrl'] : ($isVisual ? $asset['fileUrl'] : null);
-                @endphp
-
-                @if($displayUrl)
-                    <!-- Image or Asset with Cover -->
-                    <div class="relative">
-                        <img src="{{ $displayUrl }}" alt="{{ $asset['title'] ?? 'Asset' }}" class="w-full h-auto object-cover">
-                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-xs text-white font-medium flex items-center gap-1">
-                            @if($asset['type'] == 'VIDEO' || $asset['type'] == 'AMV')
-                                <svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l7-5-7-5z"></path></svg>
-                            @else
-                                <svg class="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"></path></svg>
-                            @endif
-                            {{ strtoupper($asset['type']) }}
-                        </div>
-                    </div>
-                @elseif(in_array($asset['type'], ['VIDEO', 'AMV']))
-                    <!-- Video without thumbnail -->
-                    <div class="relative w-full aspect-video bg-gray-800 flex items-center justify-center flex-col group-hover:bg-gray-750 transition-colors">
-                        <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-red-500/20 transition-all duration-300">
-                            <svg class="w-8 h-8 text-white group-hover:text-red-400 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                        </div>
-                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-xs text-white font-medium flex items-center gap-1">
-                            <svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l7-5-7-5z"></path></svg>
-                            {{ strtoupper($asset['type']) }}
-                        </div>
-                    </div>
-                @else
-                    <!-- Generic File Type (Audio, Link, Text, etc) without cover -->
-                    <div class="p-6 bg-gradient-to-br from-gray-800 to-gray-900 flex flex-col items-center justify-center min-h-[150px] text-center relative group-hover:from-indigo-900/40 group-hover:to-purple-900/40">
-                        <svg class="w-12 h-12 text-indigo-400 mb-2 opacity-50 group-hover:scale-110 group-hover:opacity-100 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            @if($asset['type'] == 'MUSIC')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
-                            @else
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                            @endif
-                        </svg>
-                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-xs text-white font-medium flex items-center gap-1">
-                            {{ strtoupper($asset['type']) }}
-                        </div>
-                    </div>
-                @endif
-
-                <!-- Bottom Metadata -->
-                <div class="p-4 border-t border-gray-800">
-                    <h3 class="text-white font-medium line-clamp-2 group-hover:text-indigo-400 transition-colors" title="{{ $asset['title'] ?? 'Untitled' }}">
-                        {{ $asset['title'] ?? 'Untitled Asset' }}
-                    </h3>
-                    <div class="flex items-center justify-between mt-3 text-gray-500 text-sm">
-                        <div class="flex items-center gap-3">
-                            <span class="flex items-center gap-1 hover:text-gray-300" title="Tags">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg> 
-                                {{ $asset['tagsCount'] ?? 0 }}
-                            </span>
-                        </div>
-                        <span class="text-xs tabular-nums">{{ \Carbon\Carbon::parse($asset['createdAt'] ?? now())->diffForHumans() }}</span>
-                    </div>
-                </div>
-            </a>
+            <x-asset-card :asset="$asset" />
         @empty
             <div class="col-span-full py-20 text-center text-gray-500 italic">
                 No assets found in the database. Go ahead and add some!
             </div>
         @endforelse
-        
     </div>
 
     <!-- Hidden scrollbar styles for categories row -->

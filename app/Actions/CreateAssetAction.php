@@ -115,7 +115,7 @@ class CreateAssetAction
             $linkedCount += count($mediaIds);
         }
 
-        Cache::forgetMultiple(CacheKeys::onAssetCreate($mediaIds, $characterIds));
+        CacheKeys::forget(CacheKeys::onAssetCreate($mediaIds, $characterIds));
 
         return $linkedCount;
     }

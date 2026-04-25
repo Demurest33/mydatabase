@@ -39,8 +39,12 @@ Route::get('/franchises/{name}', [FranchiseController::class, 'show'])->name('fr
 Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
 
+    Route::get('/assets', [\App\Http\Controllers\Admin\AssetCrudController::class, 'index'])->name('admin.assets.index');
     Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
     Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
+    Route::get('/assets/{id}/edit', [\App\Http\Controllers\Admin\AssetCrudController::class, 'edit'])->name('admin.assets.edit');
+    Route::put('/assets/{id}', [\App\Http\Controllers\Admin\AssetCrudController::class, 'update'])->name('admin.assets.update');
+    Route::delete('/assets/{id}', [\App\Http\Controllers\Admin\AssetCrudController::class, 'destroy'])->name('admin.assets.destroy');
 
     Route::resource('franchises', \App\Http\Controllers\Admin\FranchiseCrudController::class)->names('admin.franchises');
     

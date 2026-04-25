@@ -26,7 +26,7 @@
                         ['route' => 'admin.franchises.index', 'pattern' => 'admin.franchises.*', 'label' => 'Franchises'],
                         ['route' => 'admin.media.index',   'pattern' => 'admin.media.*',      'label' => 'Media'],
                         ['route' => 'admin.characters.index','pattern'=> 'admin.characters.*', 'label' => 'Characters'],
-                        ['route' => 'assets.create',       'pattern' => 'assets.*',           'label' => 'Assets'],
+                        ['route' => 'admin.assets.index',  'pattern' => 'admin.assets.*',     'label' => 'Assets'],
                     ];
                 @endphp
                 @foreach($navItems as $item)

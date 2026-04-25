@@ -101,7 +101,7 @@ class MediaCrudController extends Controller
         ';
 
         $client->run($query, $params);
-        Cache::forgetMultiple(CacheKeys::onMediaChange($params['franchise_name']));
+        CacheKeys::forget(CacheKeys::onMediaChange($params['franchise_name']));
 
         return redirect()->route('admin.media.index')->with('success', 'Media created successfully.');
     }
@@ -170,7 +170,7 @@ class MediaCrudController extends Controller
             ]
         );
 
-        Cache::forgetMultiple(CacheKeys::onMediaChange($request->input('franchise_name'), (int) $id));
+        CacheKeys::forget(CacheKeys::onMediaChange($request->input('franchise_name'), (int) $id));
 
         return redirect()->route('admin.media.index')->with('success', 'Media updated successfully.');
     }
@@ -182,7 +182,7 @@ class MediaCrudController extends Controller
             'MATCH (m:Media {id: $id}) DETACH DELETE m',
             ['id' => (int) $id]
         );
-        Cache::forgetMultiple(CacheKeys::onMediaChange('', (int) $id));
+        CacheKeys::forget(CacheKeys::onMediaChange('', (int) $id));
 
         return redirect()->route('admin.media.index')->with('success', 'Media deleted successfully.');
     }

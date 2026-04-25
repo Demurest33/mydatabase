@@ -158,7 +158,7 @@ class CharacterCrudController extends Controller
         ';
 
         $client->run($query, $params);
-        Cache::forgetMultiple(CacheKeys::onCharacterChange());
+        CacheKeys::forget(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character created successfully.');
     }
@@ -220,7 +220,7 @@ class CharacterCrudController extends Controller
             ]
         );
 
-        Cache::forgetMultiple(CacheKeys::onCharacterChange());
+        CacheKeys::forget(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character updated successfully.');
     }
@@ -232,7 +232,7 @@ class CharacterCrudController extends Controller
             'MATCH (c:Character {id: $id}) DETACH DELETE c',
             ['id' => (int) $id]
         );
-        Cache::forgetMultiple(CacheKeys::onCharacterChange());
+        CacheKeys::forget(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character deleted successfully.');
     }

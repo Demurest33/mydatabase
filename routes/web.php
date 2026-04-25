@@ -7,8 +7,14 @@ use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\FranchiseController;
 use App\Http\Controllers\WouldYouRatherController;
+use App\Http\Controllers\Auth\LoginController;
 
 Route::get('/', [AssetController::class, 'index'])->name('home');
+
+// Auth Routes
+Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('login', [LoginController::class, 'login']);
+Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/anilist', [AnilistController::class, 'index'])->name('anilist.index');
 Route::get('/would-you-rather', [WouldYouRatherController::class, 'index'])->name('wyr.index');
@@ -29,5 +35,16 @@ Route::post('/characters/{id}/assets', [CharacterController::class, 'storeAsset'
 
 Route::get('/franchises', [FranchiseController::class, 'index'])->name('franchises.index');
 
-Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
-Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
+// Backoffice
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
+
+    Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
+    Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
+
+    Route::resource('franchises', \App\Http\Controllers\Admin\FranchiseCrudController::class)->names('admin.franchises');
+    
+    Route::resource('media', \App\Http\Controllers\Admin\MediaCrudController::class)->names('admin.media');
+
+    Route::resource('characters', \App\Http\Controllers\Admin\CharacterCrudController::class)->names('admin.characters');
+});

@@ -13,8 +13,6 @@
     <!-- Vite Scripts/Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
-    <!-- Custom Scripts that might be injected by child views -->
-    @stack('scripts')
 </head>
 <body class="antialiased min-h-screen flex flex-col relative overflow-x-hidden">
     <!-- Navbar Component -->
@@ -33,5 +31,6 @@
             <p>&copy; {{ date('Y') }} Neo4j Explorer. Built with Laravel and Neo4j.</p>
         </div>
     </footer>
+    @stack('scripts')
 </body>
 </html>

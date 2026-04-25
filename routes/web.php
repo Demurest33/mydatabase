@@ -34,6 +34,8 @@ Route::get('/characters/{id}', [CharacterController::class, 'show'])->name('char
 Route::post('/characters/{id}/assets', [CharacterController::class, 'storeAsset'])->name('characters.assets.store');
 
 Route::get('/franchises', [FranchiseController::class, 'index'])->name('franchises.index');
+Route::get('/franchises/{name}', [FranchiseController::class, 'show'])->name('franchises.show')
+    ->where('name', '.+'); // allow spaces and special chars
 
 // Backoffice
 Route::middleware(['auth'])->prefix('admin')->group(function () {

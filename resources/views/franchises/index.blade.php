@@ -83,7 +83,7 @@
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 gap-y-10">
         
         @forelse($franchises as $f)
-            <a href="{{ route('neo4j.index', ['franchise' => $f['name']]) }}" class="group flex flex-col relative w-full">
+            <a href="{{ route('franchises.show', $f['name']) }}" class="group flex flex-col relative w-full">
                 <!-- Cover Image Container -->
                 <div class="relative w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-lg border border-gray-800 bg-gray-900 mb-3 group-hover:border-emerald-500/50 group-hover:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.3)] transition-all duration-300 group-hover:-translate-y-2">
                     

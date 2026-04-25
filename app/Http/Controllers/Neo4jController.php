@@ -17,10 +17,15 @@ class Neo4jController extends Controller
 
     public function index(Request $request)
     {
+        // Legacy redirect: /neo4j?franchise=X → /franchises/X
+        if ($request->filled('franchise')) {
+            return redirect()->route('franchises.show', $request->input('franchise'), 301);
+        }
+
         $franchises = [];
         $error = null;
         $franchiseData = null;
-        $search = $request->input('franchise');
+        $search = null;
 
         try {
             $franchises = app(\App\Actions\GetFranchiseNamesAction::class)->execute();

@@ -16,34 +16,80 @@ class CharacterController extends Controller
         $this->neo4j = $neo4j;
     }
 
-    public function index(Request $request)
+    public function index()
     {
-        $characters = [];
-        $search = $request->input('search');
-
         try {
             $client = $this->neo4j->client();
-            
-            $query = 'MATCH (c:Character) ';
-            $params = [];
 
-            if ($search) {
-                $query .= 'WHERE c.name CONTAINS $search OR c.id = $search ';
-                $params['search'] = $search;
+            $result = $client->run(
+                'MATCH (c:Character)
+                 OPTIONAL MATCH (m:Media)-[r:HAS_CHARACTER]->(c)
+                 OPTIONAL MATCH (f:Franchise)-[:HAS_ENTRY]->(m)
+                 WITH c,
+                      collect(CASE WHEN m IS NOT NULL
+                          THEN {mediaId: toString(m.id), mediaTitle: m.title, role: r.role, franchise: f.name}
+                          ELSE null END) AS rawApps
+                 RETURN c, [a IN rawApps WHERE a IS NOT NULL] AS appearances
+                 ORDER BY c.name ASC'
+            );
+
+            $roleOrder      = ['MAIN' => 0, 'SUPPORTING' => 1, 'BACKGROUND' => 2];
+            $grouped        = [];
+            $franchiseMedia = [];
+
+            foreach ($result as $record) {
+                $char = $record->get('c')->getProperties()->toArray();
+                $apps = [];
+
+                foreach ($record->get('appearances') as $app) {
+                    $franchise = $app['franchise'] ?? null;
+                    $mediaId   = (string) ($app['mediaId'] ?? '');
+                    if (!$franchise || !$mediaId) continue;
+
+                    $apps[] = [
+                        'mediaId'    => $mediaId,
+                        'mediaTitle' => (string) ($app['mediaTitle'] ?? ''),
+                        'role'       => (string) ($app['role'] ?? 'UNKNOWN'),
+                        'franchise'  => (string) $franchise,
+                    ];
+
+                    $franchiseMedia[$franchise][$mediaId] ??= [
+                        'id'    => $mediaId,
+                        'title' => (string) ($app['mediaTitle'] ?? ''),
+                    ];
+                }
+
+                if (empty($apps)) {
+                    $char['mediaIds']    = [];
+                    $char['mediaTitle']  = null;
+                    $grouped['Sin franquicia']['UNKNOWN'][] = $char;
+                    continue;
+                }
+
+                usort($apps, fn($a, $b) =>
+                    ($roleOrder[$a['role']] ?? 99) <=> ($roleOrder[$b['role']] ?? 99)
+                );
+
+                $primary             = $apps[0];
+                $char['mediaIds']    = array_values(array_unique(array_column($apps, 'mediaId')));
+                $char['mediaTitle']  = $primary['mediaTitle'];
+
+                $grouped[$primary['franchise']][$primary['role']][] = $char;
             }
 
-            $query .= 'RETURN c LIMIT 100';
-            
-            $result = $client->run($query, $params);
-            foreach ($result as $record) {
-                $characters[] = $record->get('c')->getProperties()->toArray();
+            ksort($grouped);
+            ksort($franchiseMedia);
+            foreach ($franchiseMedia as &$items) {
+                usort($items, fn($a, $b) => strcmp($a['title'], $b['title']));
+                $items = array_values($items);
             }
 
         } catch (Exception $e) {
-            return back()->with('error', $e->getMessage());
+            $grouped        = [];
+            $franchiseMedia = [];
         }
 
-        return view('characters.index', compact('characters', 'search'));
+        return view('characters.index', compact('grouped', 'franchiseMedia'));
     }
 
     public function searchJson(Request $request)

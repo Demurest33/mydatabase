@@ -123,7 +123,9 @@ class CharacterCrudController extends Controller
             ];
         }
 
-        return view('admin.characters.create', compact('mediaList'));
+        $tags = $this->loadCharacterTags();
+
+        return view('admin.characters.create', compact('mediaList', 'tags'));
     }
 
     public function store(Request $request)
@@ -158,6 +160,18 @@ class CharacterCrudController extends Controller
         ';
 
         $client->run($query, $params);
+
+        $tagIds = array_values(array_filter(array_map('intval', $request->input('tag_ids', []))));
+        if (!empty($tagIds)) {
+            $client->run(
+                'MATCH (c:Character {id: $charId})
+                 UNWIND $tagIds AS tagId
+                 MATCH (t:Tag {id: tagId})
+                 MERGE (c)-[:HAS_TAG]->(t)',
+                ['charId' => $id, 'tagIds' => $tagIds]
+            );
+        }
+
         CacheKeys::forget(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character created successfully.');
@@ -189,7 +203,17 @@ class CharacterCrudController extends Controller
             $mediaList[] = ['id' => $r->get('id'), 'title' => $r->get('title')];
         }
 
-        return view('admin.characters.edit', compact('character', 'mediaList'));
+        $selectedTagIds = [];
+        foreach ($client->run(
+            'MATCH (c:Character {id: $id})-[:HAS_TAG]->(t:Tag) RETURN t.id AS id',
+            ['id' => (int) $id]
+        ) as $r) {
+            $selectedTagIds[] = (int) $r->get('id');
+        }
+
+        $tags = $this->loadCharacterTags();
+
+        return view('admin.characters.edit', compact('character', 'mediaList', 'tags', 'selectedTagIds'));
     }
 
     public function update(Request $request, $id)
@@ -220,9 +244,42 @@ class CharacterCrudController extends Controller
             ]
         );
 
+        $client->run(
+            'MATCH (c:Character {id: $id}) OPTIONAL MATCH (c)-[r:HAS_TAG]->() DELETE r',
+            ['id' => (int) $id]
+        );
+
+        $tagIds = array_values(array_filter(array_map('intval', $request->input('tag_ids', []))));
+        if (!empty($tagIds)) {
+            $client->run(
+                'MATCH (c:Character {id: $id})
+                 UNWIND $tagIds AS tagId
+                 MATCH (t:Tag {id: tagId})
+                 MERGE (c)-[:HAS_TAG]->(t)',
+                ['id' => (int) $id, 'tagIds' => $tagIds]
+            );
+        }
+
         CacheKeys::forget(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character updated successfully.');
+    }
+
+    private function loadCharacterTags(): array
+    {
+        $result = $this->neo4j->client()->run(
+            'MATCH (t:Tag {type: "character"}) RETURN t ORDER BY t.category ASC, t.name ASC'
+        );
+        $grouped = [];
+        foreach ($result as $record) {
+            $d   = $record->get('t')->getProperties()->toArray();
+            $cat = (string) ($d['category'] ?? 'General');
+            $grouped[$cat][] = [
+                'id'   => (int) $d['id'],
+                'name' => (string) $d['name'],
+            ];
+        }
+        return $grouped;
     }
 
     public function destroy($id)

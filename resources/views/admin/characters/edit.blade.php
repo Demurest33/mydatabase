@@ -86,6 +86,29 @@
                 </div>
             </div>
 
+            @if(!empty($tags))
+            <div>
+                <label class="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Tags</label>
+                <div class="space-y-3">
+                    @foreach($tags as $category => $tagList)
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">{{ $category }}</p>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($tagList as $tag)
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                <input type="checkbox" name="tag_ids[]" value="{{ $tag['id'] }}"
+                                       class="w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer"
+                                       {{ in_array($tag['id'], $selectedTagIds) ? 'checked' : '' }}>
+                                <span class="text-xs text-gray-400 hover:text-gray-200 transition-colors">{{ $tag['name'] }}</span>
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <div class="pt-4 border-t border-gray-800 flex items-center justify-between gap-4">
                 <button type="submit" form="delete-char-form"
                         class="bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 font-bold py-3 px-6 rounded-xl transition-colors border border-red-600/30 text-sm">

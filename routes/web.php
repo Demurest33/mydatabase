@@ -65,6 +65,8 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 
     Route::resource('albums', \App\Http\Controllers\Admin\AlbumCrudController::class)->names('admin.albums');
 
+    Route::resource('tags', \App\Http\Controllers\Admin\TagCrudController::class)->names('admin.tags')->except(['show']);
+
     Route::get('/asset-type-images', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'index'])->name('admin.asset-type-images.index');
     Route::post('/asset-type-images/{type}', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'upsert'])->name('admin.asset-type-images.upsert')->where('type', '.+');
     Route::delete('/asset-type-images/{type}', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'destroy'])->name('admin.asset-type-images.destroy')->where('type', '.+');

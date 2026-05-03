@@ -63,6 +63,29 @@
                 <input type="url" name="image" class="w-full bg-black/40 border border-gray-700 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors font-medium text-sm" placeholder="https://..." value="{{ old('image') }}">
             </div>
 
+            @if(!empty($tags))
+            <div>
+                <label class="block text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Tags</label>
+                <div class="space-y-3">
+                    @foreach($tags as $category => $tagList)
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">{{ $category }}</p>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($tagList as $tag)
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                <input type="checkbox" name="tag_ids[]" value="{{ $tag['id'] }}"
+                                       class="w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer"
+                                       {{ in_array($tag['id'], (array) old('tag_ids', [])) ? 'checked' : '' }}>
+                                <span class="text-xs text-gray-400 hover:text-gray-200 transition-colors">{{ $tag['name'] }}</span>
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <div class="pt-4 border-t border-gray-800 flex justify-end">
                 <button type="submit" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-8 rounded-xl transition-colors shadow-lg shadow-pink-500/20">
                     Create Character

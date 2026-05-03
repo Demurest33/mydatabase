@@ -71,6 +71,21 @@ final class CacheKeys
     /** All franchises (admin backoffice). */
     public const ADMIN_FRANCHISES_INDEX = 'admin.franchises.index';
 
+    // ── Tags ─────────────────────────────────────────────────────────────────
+
+    /** All character tags for the public sidebar filter. */
+    public const TAGS_CHARACTER = 'tags.character';
+
+    /** Keys to forget when any Tag is created, updated, or deleted. */
+    public static function onTagChange(): array
+    {
+        return [
+            self::TAGS_CHARACTER,
+            self::CHARACTERS_GROUPED,
+            self::ADMIN_CHARACTERS_GROUPED,
+        ];
+    }
+
     // ── Albums ───────────────────────────────────────────────────────────────
 
     /** All albums listing (public). */

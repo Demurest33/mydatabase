@@ -45,6 +45,42 @@
                 </button>
             </div>
 
+            {{-- Tag filter --}}
+            @if(!empty($allTags))
+            <div class="border-t border-gray-800/60 pt-2 space-y-1">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Tags</span>
+                    <button id="btn-clear-tags" type="button"
+                            class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold hidden">
+                        Limpiar
+                    </button>
+                </div>
+                @foreach($allTags as $category => $tagList)
+                <details class="group/tg">
+                    <summary class="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none list-none
+                                    text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
+                        <svg class="w-3 h-3 flex-shrink-0 transition-transform duration-150 group-open/tg:rotate-90"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                        </svg>
+                        <span class="text-xs font-semibold truncate flex-1">{{ $category }}</span>
+                    </summary>
+                    <div class="mt-1 ml-2 pl-3 border-l border-gray-800 flex flex-wrap gap-1 pb-1">
+                        @foreach($tagList as $tag)
+                        <button type="button"
+                                data-tag-id="{{ $tag['id'] }}"
+                                class="tag-filter px-2 py-0.5 rounded-full text-[10px] font-semibold
+                                       border border-gray-700 text-gray-500 transition-all cursor-pointer
+                                       hover:border-indigo-500/50 hover:text-indigo-300">
+                            {{ $tag['name'] }}
+                        </button>
+                        @endforeach
+                    </div>
+                </details>
+                @endforeach
+            </div>
+            @endif
+
             {{-- Franchise groups with media checkboxes --}}
             <div class="overflow-y-auto flex-1 space-y-1 pr-0.5"
                  style="scrollbar-color:#374151 transparent; scrollbar-width:thin;">
@@ -125,7 +161,8 @@
                                       hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10
                                       hover:-translate-y-1 transition-all duration-200 flex flex-col"
                                data-name="{{ strtolower($char->name ?? '') }}"
-                               data-media-ids="{{ implode(',', $char->mediaIds ?? []) }}">
+                               data-media-ids="{{ implode(',', $char->mediaIds ?? []) }}"
+                               data-tag-ids="{{ implode(',', $char->tagIds ?? []) }}">
 
                                 {{-- Portrait --}}
                                 <div class="aspect-[3/4] bg-gray-900 relative overflow-hidden flex-shrink-0">
@@ -194,6 +231,7 @@
         const searchInput  = document.getElementById('char-search');
         const noResults    = document.getElementById('no-results');
         const btnSelectAll = document.getElementById('btn-select-all');
+        const btnClearTags = document.getElementById('btn-clear-tags');
 
         let allSelected = true;
 
@@ -214,12 +252,39 @@
             });
         });
 
+        document.querySelectorAll('.tag-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+                const isActive = btn.classList.contains('active');
+                btn.classList.toggle('border-indigo-500', isActive);
+                btn.classList.toggle('text-indigo-300', isActive);
+                btn.classList.toggle('bg-indigo-500/10', isActive);
+                btn.classList.toggle('border-gray-700', !isActive);
+                btn.classList.toggle('text-gray-500', !isActive);
+                const anyActive = document.querySelectorAll('.tag-filter.active').length > 0;
+                btnClearTags?.classList.toggle('hidden', !anyActive);
+                applyFilter();
+            });
+        });
+
+        btnClearTags?.addEventListener('click', () => {
+            document.querySelectorAll('.tag-filter.active').forEach(btn => {
+                btn.classList.remove('active', 'border-indigo-500', 'text-indigo-300', 'bg-indigo-500/10');
+                btn.classList.add('border-gray-700', 'text-gray-500');
+            });
+            btnClearTags.classList.add('hidden');
+            applyFilter();
+        });
+
         searchInput.addEventListener('input', applyFilter);
         searchInput.addEventListener('search', () => { if (!searchInput.value) applyFilter(); });
 
         function applyFilter() {
             const checkedIds = new Set(
                 [...document.querySelectorAll('.media-filter:checked')].map(c => c.value)
+            );
+            const selectedTags = new Set(
+                [...document.querySelectorAll('.tag-filter.active')].map(b => b.dataset.tagId)
             );
             const query   = searchInput.value.trim().toLowerCase();
             const noMedia = checkedIds.size === 0;
@@ -232,10 +297,12 @@
                     let roleHasVisible = false;
 
                     roleEl.querySelectorAll('.char-card').forEach(card => {
-                        const ids          = card.dataset.mediaIds.split(',').filter(Boolean);
-                        const matchesMedia  = !noMedia && (ids.length === 0 || ids.some(id => checkedIds.has(id)));
+                        const mediaIds     = card.dataset.mediaIds.split(',').filter(Boolean);
+                        const tagIds       = card.dataset.tagIds ? card.dataset.tagIds.split(',').filter(Boolean) : [];
+                        const matchesMedia  = !noMedia && (mediaIds.length === 0 || mediaIds.some(id => checkedIds.has(id)));
                         const matchesSearch = !query || card.dataset.name.includes(query);
-                        const visible = matchesMedia && matchesSearch;
+                        const matchesTags   = selectedTags.size === 0 || tagIds.some(tid => selectedTags.has(tid));
+                        const visible = matchesMedia && matchesSearch && matchesTags;
                         card.style.display = visible ? '' : 'none';
                         if (visible) roleHasVisible = true;
                     });

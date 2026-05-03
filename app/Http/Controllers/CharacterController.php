@@ -29,6 +29,10 @@ class CharacterController extends Controller
             return $this->buildCharacterGroupsRaw();
         });
 
+        $allTags = Cache::remember(CacheKeys::TAGS_CHARACTER, CacheKeys::TTL_LONG, function () {
+            return $this->loadPublicCharacterTags();
+        });
+
         // Hydrate DTOs outside the cache closure — DTOs must never be serialized
         $grouped = [];
         foreach ($raw['grouped'] as $franchise => $roles) {
@@ -41,7 +45,7 @@ class CharacterController extends Controller
             $franchiseMedia[$franchise] = array_map(fn($d) => (object) $d, $items);
         }
 
-        return view('characters.index', compact('grouped', 'franchiseMedia'));
+        return view('characters.index', compact('grouped', 'franchiseMedia', 'allTags'));
     }
 
     /** Returns plain arrays only — no DTOs — safe to serialize in any cache driver. */
@@ -58,7 +62,12 @@ class CharacterController extends Controller
                       collect(CASE WHEN m IS NOT NULL
                           THEN {mediaId: toString(m.id), mediaTitle: m.title, role: r.role, franchise: f.name}
                           ELSE null END) AS rawApps
-                 RETURN c, [a IN rawApps WHERE a IS NOT NULL] AS appearances
+                 OPTIONAL MATCH (c)-[:HAS_TAG]->(t:Tag)
+                 WITH c, rawApps,
+                      collect(DISTINCT CASE WHEN t IS NOT NULL THEN toString(t.id) ELSE null END) AS rawTagIds
+                 RETURN c,
+                        [a IN rawApps WHERE a IS NOT NULL] AS appearances,
+                        [tid IN rawTagIds WHERE tid IS NOT NULL] AS tagIds
                  ORDER BY c.name ASC'
             );
 
@@ -67,8 +76,13 @@ class CharacterController extends Controller
             $franchiseMedia = [];
 
             foreach ($result as $record) {
-                $props = $record->get('c')->getProperties()->toArray();
-                $apps  = [];
+                $props  = $record->get('c')->getProperties()->toArray();
+                $apps   = [];
+                $tagIds = [];
+
+                foreach ($record->get('tagIds') as $tid) {
+                    if ($tid !== null && $tid !== '') $tagIds[] = (string) $tid;
+                }
 
                 foreach ($record->get('appearances') as $app) {
                     $franchise = $app['franchise'] ?? null;
@@ -89,7 +103,7 @@ class CharacterController extends Controller
                 }
 
                 if (empty($apps)) {
-                    $grouped['Sin franquicia']['UNKNOWN'][] = $props;
+                    $grouped['Sin franquicia']['UNKNOWN'][] = $props + ['tagIds' => $tagIds];
                     continue;
                 }
 
@@ -97,11 +111,12 @@ class CharacterController extends Controller
                     ($roleOrder[$a['role']] ?? 99) <=> ($roleOrder[$b['role']] ?? 99)
                 );
 
-                $primary   = $apps[0];
-                $charRow   = $props + [
+                $primary = $apps[0];
+                $charRow = $props + [
                     'mediaIds'   => array_values(array_unique(array_column($apps, 'mediaId'))),
                     'mediaTitle' => $primary['mediaTitle'],
                     'role'       => $primary['role'],
+                    'tagIds'     => $tagIds,
                 ];
 
                 $grouped[$primary['franchise']][$primary['role']][] = $charRow;
@@ -198,6 +213,24 @@ class CharacterController extends Controller
             'assets'        => $assets,
             'allCharacters' => $allCharacters,
         ];
+    }
+
+    private function loadPublicCharacterTags(): array
+    {
+        $client = $this->neo4j->client();
+        $result = $client->run(
+            'MATCH (t:Tag {type: "character"}) RETURN t ORDER BY t.category ASC, t.name ASC'
+        );
+        $grouped = [];
+        foreach ($result as $record) {
+            $d   = $record->get('t')->getProperties()->toArray();
+            $cat = (string) ($d['category'] ?? 'General');
+            $grouped[$cat][] = [
+                'id'   => (string) $d['id'],
+                'name' => (string) $d['name'],
+            ];
+        }
+        return $grouped;
     }
 
     // ── JSON search endpoint ─────────────────────────────────────────────────

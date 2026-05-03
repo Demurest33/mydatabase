@@ -13,6 +13,8 @@ class CharacterDTO
         public readonly ?string $mediaTitle = null,
         public readonly ?string $role       = null,
         public readonly int     $priority   = 0,
+        /** @var string[] */
+        public readonly array   $tagIds     = [],
     ) {}
 
     public static function from(array $data): self
@@ -25,6 +27,7 @@ class CharacterDTO
             mediaTitle:           $data['mediaTitle']  ?? null,
             role:                 $data['role']        ?? null,
             priority:   (int)    ($data['priority']   ?? 0),
+            tagIds:     array_values(array_map('strval', (array) ($data['tagIds'] ?? []))),
         );
     }
 }

@@ -85,7 +85,7 @@
             padding: 0 18px 14px;
         }
         .album-book {
-            flex: 1; min-width: 0; min-height: 0; max-width: 1420px;
+            flex: 1; min-width: 0; min-height: 0;
             display: flex; border-radius: 3px 18px 18px 3px; overflow: hidden;
             box-shadow: -14px 0 60px rgba(0,0,0,0.95), 0 28px 80px rgba(0,0,0,0.75),
                         inset 0 0 0 1px rgba(255,255,255,0.04);
@@ -219,6 +219,70 @@
         .spark { position: absolute; border-radius: 50%; animation: spark-fly 0.48s ease-out forwards; }
         .prog-fill { transition: width 0.75s cubic-bezier(0.4,0,0.2,1); }
 
+        /* ── Album+pack flex wrapper ── */
+        .album-flex { flex: 1; max-width: 1480px; min-width: 0; display: flex; align-items: stretch; }
+
+        /* ── Pack sidebar ── */
+        .pack-area { width: 22px; flex-shrink: 0; position: relative; overflow: visible; display: flex; align-items: center; z-index: 100; }
+        .pack-wrap {
+            position: absolute; left: -64px;
+            width: 86px; height: 124px;
+            cursor: pointer;
+            transition: left 0.32s cubic-bezier(0.34,1.56,0.64,1), transform 0.25s ease;
+            filter: drop-shadow(0 8px 22px rgba(0,0,0,0.75));
+        }
+        .pack-wrap:hover { left: -4px; transform: translateY(-8px) rotate(-1.5deg); }
+        .pack-wrap:hover .pack-glow { opacity: 0.9; }
+        .pack-inner { width: 100%; height: 100%; border-radius: 9px; overflow: hidden; position: relative; border: 1.5px solid rgba(255,255,255,0.22); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18); }
+        .pack-bg { position: absolute; inset: 0; transition: background 0.5s; }
+        .pack-holo { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: conic-gradient(from 0deg,rgba(255,0,128,.18),rgba(255,200,0,.18),rgba(0,255,128,.18),rgba(0,150,255,.18),rgba(200,0,255,.18),rgba(255,0,128,.18)); animation: holo-spin 8s linear infinite; mix-blend-mode: screen; }
+        @keyframes holo-spin { 0% { transform: rotate(0deg) scale(2); } 100% { transform: rotate(360deg) scale(2); } }
+        .pack-foil-fx { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(135deg,transparent 0%,rgba(255,255,255,.32) 40%,transparent 55%,rgba(255,255,255,.14) 70%,transparent 100%); background-size: 200% 200%; animation: foil-sweep 3.5s ease-in-out infinite; }
+        @keyframes foil-sweep { 0%,100% { background-position: 0% 0%; } 50% { background-position: 100% 100%; } }
+        .pack-content { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; }
+        .pack-label-txt { font-family: 'Bebas Neue'; font-size: 13px; letter-spacing: 0.1em; text-align: center; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+        .pack-glow { position: absolute; inset: -10px; border-radius: 16px; pointer-events: none; z-index: -1; animation: glow-pulse 2.5s ease-in-out infinite; transition: opacity 0.3s; }
+        @keyframes glow-pulse { 0%,100% { opacity: .45; transform: scale(1); } 50% { opacity: .9; transform: scale(1.07); } }
+        .pack-particles { position: absolute; inset: -28px; pointer-events: none; z-index: 5; }
+        .p-dot { position: absolute; border-radius: 50%; width: var(--sz); height: var(--sz); left: var(--x); top: var(--y); opacity: 0; animation: p-float var(--dur) ease-in-out infinite var(--del); }
+        @keyframes p-float { 0%,100%{opacity:0;transform:translateY(0) scale(0);} 20%{opacity:.9;transform:translateY(-12px) scale(1);} 80%{opacity:.25;transform:translateY(-26px) scale(.55);} }
+
+        /* ── Locked sticker ── */
+        .sticker-locked { border: 1.5px solid rgba(255,255,255,0.04) !important; background: rgba(0,0,0,0.3) !important; cursor: default !important; }
+        .sticker-locked:hover { transform: none !important; border-color: rgba(255,255,255,0.05) !important; background: rgba(0,0,0,0.3) !important; }
+        .sticker-locked .se-code { opacity: 0.09 !important; }
+        .lock-svg { width: 13px; height: 13px; color: rgba(255,255,255,0.1); }
+
+        /* ── Pack overlay ── */
+        .pack-overlay { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); backdrop-filter: blur(14px); }
+        .pack-modal { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+        .modal-x { position: absolute; top: -16px; right: -16px; width: 30px; height: 30px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 50%; cursor: pointer; color: rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; transition: all 0.16s; z-index: 10; }
+        .modal-x:hover { background: rgba(255,255,255,0.16); color: #fff; }
+        .modal-pack { width: 160px; height: 228px; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; box-shadow: 0 0 60px rgba(139,92,246,.4), 0 20px 60px rgba(0,0,0,.85); border: 2px solid rgba(255,255,255,0.18); transition: transform 0.2s; }
+        .modal-pack:not(.shaking):not(.exploding):hover { transform: scale(1.04) translateY(-4px); }
+        @keyframes pack-shake { 0%,100%{transform:rotate(0) translateX(0);} 12%{transform:rotate(-7deg) translateX(-5px);} 25%{transform:rotate(7deg) translateX(5px);} 37%{transform:rotate(-5deg) translateX(-4px);} 50%{transform:rotate(5deg) translateX(4px);} 62%{transform:rotate(-3deg) translateX(-2px);} 75%{transform:rotate(3deg) translateX(2px);} 87%{transform:rotate(-1deg) translateX(-1px);} }
+        .modal-pack.shaking { animation: pack-shake .65s cubic-bezier(.36,.07,.19,.97) both; pointer-events: none; }
+        @keyframes pack-burst { 0%{transform:scale(1);opacity:1;filter:brightness(1);} 35%{transform:scale(1.25);opacity:1;filter:brightness(5);} 70%{transform:scale(1.7);opacity:0;filter:brightness(2);} 100%{transform:scale(.7);opacity:0;} }
+        .modal-pack.exploding { animation: pack-burst .4s ease-out forwards; pointer-events: none; }
+        .modal-hint { font-size: 11px; color: rgba(255,255,255,0.32); font-weight: 600; letter-spacing: 0.06em; }
+
+        /* ── Card reveal ── */
+        @keyframes card-emerge { 0%{transform:scale(.15) translateY(60px) rotate(-10deg);opacity:0;} 65%{transform:scale(1.07) translateY(-5px) rotate(1deg);opacity:1;} 100%{transform:scale(1) translateY(0) rotate(0);opacity:1;} }
+        .reveal-card { width: 200px; height: 280px; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 12px 44px rgba(0,0,0,.8), 0 0 0 1.5px rgba(255,255,255,.12); animation: card-emerge .52s cubic-bezier(.22,1,.36,1) forwards; cursor: pointer; }
+        .card-badge { position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); padding: 4px 12px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,.5); z-index: 10; }
+        .prog-dots { display: flex; gap: 8px; }
+        .prog-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.18); transition: all .25s; }
+        .prog-dot.done { background: rgba(255,255,255,.5); }
+        .prog-dot.active { background: #fff; transform: scale(1.4); }
+        .next-btn { padding: 10px 30px; border-radius: 10px; border: none; cursor: pointer; font-family: 'Inter'; font-size: 12px; font-weight: 800; letter-spacing: .07em; transition: all .18s; color: #fff; }
+        .next-btn:hover { filter: brightness(1.18); transform: translateY(-1px); }
+        .cards-summary { display: flex; gap: 10px; align-items: flex-end; }
+        @keyframes sum-emerge { 0%{transform:scale(.3) translateY(30px);opacity:0;} 100%{transform:scale(1) translateY(0);opacity:1;} }
+        .summary-card { width: 80px; height: 112px; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 4px 16px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.1); animation: sum-emerge .4s cubic-bezier(.22,1,.36,1) both; }
+        .sum-dot { position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; z-index: 5; box-shadow: 0 0 6px currentColor; }
+        .close-pack-btn { padding: 10px 30px; border-radius: 10px; cursor: pointer; font-family: 'Inter'; font-size: 12px; font-weight: 700; letter-spacing: .08em; background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.13); color: rgba(255,255,255,.65); transition: all .18s; }
+        .close-pack-btn:hover { background: rgba(255,255,255,.14); color: #fff; transform: translateY(-1px); }
+
         /* Mobile fallback */
         @media (max-width: 760px) {
             html, body { height: auto; overflow: auto; }
@@ -228,6 +292,7 @@
             .page-left { width: 100%; border-right: none; border-bottom: 4px solid rgba(0,0,0,0.5); overflow: visible; }
             .page-right { min-height: 500px; overflow: visible; }
             .sticker-scroll { overflow: visible; }
+            .pack-area { display: none; }
         }
     </style>
 </head>
@@ -268,7 +333,27 @@ foreach ($media as $m) {
 </nav>
 
 <div class="album-wrap">
-    <div class="album-book" id="albumBook"></div>
+    <div class="album-flex">
+        <div class="album-book" id="albumBook"></div>
+        <div class="pack-area">
+            <div class="pack-wrap" id="packWrap">
+                <div class="pack-particles" id="packParticles"></div>
+                <div class="pack-inner">
+                    <div class="pack-bg" id="packBg"></div>
+                    <div class="pack-holo"></div>
+                    <div class="pack-foil-fx"></div>
+                    <div class="pack-content">
+                        <div class="pack-label-txt" id="packLabel">SOBRE<br>× 5</div>
+                    </div>
+                </div>
+                <div class="pack-glow" id="packGlow"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="packOverlay" style="display:none;" class="pack-overlay">
+    <div id="packModal" class="pack-modal"></div>
 </div>
 
 <script>
@@ -371,6 +456,33 @@ let placed = (() => {
     } catch { return {}; }
 })();
 
+// ── Owned state (cards obtained from packs) ────────────────────
+let owned = (() => {
+    try {
+        const raw = JSON.parse(localStorage.getItem('album_' + ALBUM_ID + '_owned') || '{}');
+        const out = {};
+        for (const k in raw) out[k] = new Set(raw[k]);
+        // Migrate: already-placed cards are considered owned
+        for (const k in placed) {
+            if (!out[k]) out[k] = new Set();
+            for (const id of placed[k]) out[k].add(id);
+        }
+        return out;
+    } catch { return {}; }
+})();
+
+function saveOwned() {
+    const out = {};
+    for (const k in owned) out[k] = [...owned[k]];
+    localStorage.setItem('album_' + ALBUM_ID + '_owned', JSON.stringify(out));
+}
+
+function ownedSet(mediaId) {
+    const k = String(mediaId);
+    if (!owned[k]) owned[k] = new Set();
+    return owned[k];
+}
+
 function savePlaced() {
     const out = {};
     for (const k in placed) out[k] = [...placed[k]];
@@ -395,6 +507,8 @@ function go(idx) {
 function render() {
     updateNav();
     renderBook();
+    updatePackStyle();
+    initPackParticles();
 }
 
 function updateNav() {
@@ -551,15 +665,27 @@ function buildFilled(char, p, idx, above) {
 }
 
 function buildEmpty(char, p, idx) {
+    const m = MEDIA_LIST[curIdx];
+    const isOwned = ownedSet(m.id).has(char.id);
+    if (isOwned) {
+        return `
+            <div class="sticker-empty" style="border-color:${p.c2}38;">
+              <div class="se-code" style="color:${p.accent};">#${String(idx + 1).padStart(3,'0')}</div>
+              <div class="se-plus" style="color:${p.accent};">+</div>
+            </div>`;
+    }
     return `
-        <div class="sticker-empty" style="border-color:${p.c2}38;">
-          <div class="se-code" style="color:${p.accent};">#${String(idx + 1).padStart(3,'0')}</div>
-          <div class="se-plus" style="color:${p.accent};">+</div>
+        <div class="sticker-empty sticker-locked">
+          <div class="se-code">#${String(idx + 1).padStart(3,'0')}</div>
+          <svg class="lock-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
         </div>`;
 }
 
 // ── Place sticker ─────────────────────────────────────────────
 function place(char, slot, p, idx, above, m) {
+    if (!ownedSet(m.id).has(char.id)) return;
     if (slot.classList.contains('placing')) return;
     slot.classList.add('placing');
     slot.innerHTML = buildFilled(char, p, idx, above) + sparks(p);
@@ -595,6 +721,177 @@ function refreshProgress(m, p) {
     if (fill) fill.style.width = pct + '%';
     const prog = document.querySelector('[data-prog]');
     if (prog) prog.textContent = done + '/' + total;
+}
+
+// ── Pack system ───────────────────────────────────────────────
+let packState = 'idle'; // idle | ready | shaking | exploding | revealing | done
+let drawnCards = [];
+let revealIdx  = 0;
+
+function updatePackStyle() {
+    const m = MEDIA_LIST[curIdx];
+    if (!m) return;
+    const p = colorCache[m.id] || fallbackPal(curIdx);
+    const bg = document.getElementById('packBg');
+    if (bg) bg.style.background = p.bg;
+    const glow = document.getElementById('packGlow');
+    if (glow) glow.style.background = `radial-gradient(ellipse at center, ${p.c2} 0%, transparent 70%)`;
+    const label = document.getElementById('packLabel');
+    if (label) label.style.color = p.accent;
+}
+
+function initPackParticles() {
+    const wrap = document.getElementById('packParticles');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const m = MEDIA_LIST[curIdx];
+    const p = colorCache[m?.id] || fallbackPal(curIdx);
+    for (let i = 0; i < 14; i++) {
+        const d = document.createElement('span');
+        d.className = 'p-dot';
+        const sz = (2 + Math.random() * 4).toFixed(1) + 'px';
+        d.style.cssText = `--sz:${sz};--x:${(Math.random()*110-5).toFixed(0)}%;--y:${(Math.random()*110-5).toFixed(0)}%;--dur:${(1.6+Math.random()*2.2).toFixed(1)}s;--del:${(Math.random()*2).toFixed(1)}s;background:${i%3===0?p.accent:i%3===1?p.c2:'rgba(255,255,255,0.7)'};`;
+        wrap.appendChild(d);
+    }
+}
+
+// Open overlay
+function openPackOverlay() {
+    if (packState !== 'idle') return;
+    const m = MEDIA_LIST[curIdx];
+    if (!m?.characters.length) return;
+    packState = 'ready';
+    const overlay = document.getElementById('packOverlay');
+    overlay.style.display = 'flex';
+    renderPackModal();
+}
+
+function closePackOverlay() {
+    document.getElementById('packOverlay').style.display = 'none';
+    packState = 'idle';
+    renderBook();
+}
+
+function renderPackModal() {
+    const m  = MEDIA_LIST[curIdx];
+    const p  = colorCache[m.id] || fallbackPal(curIdx);
+    const modal = document.getElementById('packModal');
+
+    if (packState === 'ready') {
+        modal.innerHTML = `
+            <button class="modal-x" id="mClose">×</button>
+            <div class="modal-pack" id="modalPack">
+                <div style="position:absolute;inset:0;background:${p.bg};"></div>
+                <div class="pack-holo"></div>
+                <div class="pack-foil-fx"></div>
+                <div style="position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                    <div style="font-size:42px;">📦</div>
+                    <div style="font-family:'Bebas Neue';font-size:22px;letter-spacing:.1em;color:${p.accent};">× 5 CARTAS</div>
+                </div>
+            </div>
+            <p class="modal-hint">Haz clic para abrir</p>`;
+        document.getElementById('modalPack').addEventListener('click', startOpening);
+        document.getElementById('mClose').addEventListener('click', closePackOverlay);
+
+    } else if (packState === 'revealing') {
+        const char = drawnCards[revealIdx];
+        const BADGES = {
+            new:    { text:'★ Nueva',    bg:'rgba(4,120,87,0.85)',   color:'#6ee7b7' },
+            repeat: { text:'↩ Repetida', bg:'rgba(17,24,39,0.9)',    color:'#9ca3af' },
+            album:  { text:'✓ En álbum', bg:'rgba(120,53,15,0.85)',  color:'#fbbf24' },
+        };
+        const badge = BADGES[char.badgeType] || BADGES.repeat;
+        const dots  = Array.from({length:5}, (_,i) =>
+            `<div class="prog-dot ${i<revealIdx?'done':i===revealIdx?'active':''}"></div>`).join('');
+
+        modal.innerHTML = `
+            <button class="modal-x" id="mClose">×</button>
+            <div class="prog-dots">${dots}</div>
+            <div class="reveal-card" id="revealCard">
+                <div style="position:absolute;inset:0;background:${p.bg};"></div>
+                <div class="pack-holo" style="z-index:1;"></div>
+                <div class="pack-foil-fx" style="z-index:2;"></div>
+                ${char.image
+                    ? `<img src="${esc(char.image)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;z-index:3;">`
+                    : `<div style="position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;font-size:64px;">👤</div>`}
+                <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.1) 55%,transparent 100%);z-index:4;"></div>
+                <div style="position:absolute;top:7px;left:9px;font-family:'Bebas Neue';font-size:14px;color:${p.accent};z-index:6;">#${String(revealIdx+1).padStart(2,'0')}</div>
+                <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 10px 14px;z-index:6;">
+                    <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2;">${esc(char.name)}</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">${esc(char.mediaTitle||m.title)}</div>
+                </div>
+                <div class="card-badge" style="background:${badge.bg};color:${badge.color};">${badge.text}</div>
+            </div>
+            <button class="next-btn" id="nextBtn" style="background:${p.c1};">
+                ${revealIdx < 4 ? 'SIGUIENTE →' : 'VER RESULTADO'}
+            </button>
+            <p style="font-size:10px;color:rgba(255,255,255,.18);margin-top:-10px;">o haz clic en la carta</p>`;
+        document.getElementById('mClose').addEventListener('click', closePackOverlay);
+        document.getElementById('nextBtn').addEventListener('click', advanceReveal);
+        document.getElementById('revealCard').addEventListener('click', advanceReveal);
+
+    } else if (packState === 'done') {
+        const DOT_COLORS = { new:'#34d399', repeat:'#6b7280', album:'#fbbf24' };
+        const cardsHtml = drawnCards.map((c, i) => `
+            <div class="summary-card" style="background:${p.bg};animation-delay:${i*.09}s;">
+                <div class="pack-foil-fx" style="z-index:2;"></div>
+                ${c.image ? `<img src="${esc(c.image)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;z-index:1;">` : ''}
+                <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8) 0%,transparent 60%);z-index:3;"></div>
+                <div style="position:absolute;bottom:0;left:0;right:0;padding:5px;z-index:4;text-align:center;font-size:8.5px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.name)}</div>
+                <div class="sum-dot" style="background:${DOT_COLORS[c.badgeType]};color:${DOT_COLORS[c.badgeType]};"></div>
+            </div>`).join('');
+
+        modal.innerHTML = `
+            <button class="modal-x" id="mClose">×</button>
+            <p style="font-size:16px;font-weight:800;color:#fff;letter-spacing:.04em;">¡Sobre abierto!</p>
+            <div class="cards-summary">${cardsHtml}</div>
+            <div style="display:flex;gap:14px;font-size:10px;color:rgba(255,255,255,.32);">
+                <span style="color:#34d399;">★</span> Nueva &nbsp;
+                <span style="color:#6b7280;">●</span> Repetida &nbsp;
+                <span style="color:#fbbf24;">✓</span> En álbum
+            </div>
+            <button class="close-pack-btn" id="closePack">CERRAR Y COLOCAR</button>`;
+        document.getElementById('mClose').addEventListener('click', closePackOverlay);
+        document.getElementById('closePack').addEventListener('click', closePackOverlay);
+    }
+}
+
+function startOpening() {
+    if (packState !== 'ready') return;
+    packState = 'shaking';
+    const packEl = document.getElementById('modalPack');
+    packEl.classList.add('shaking');
+    setTimeout(() => {
+        packEl.classList.remove('shaking');
+        packEl.classList.add('exploding');
+        // Draw and classify cards
+        const m = MEDIA_LIST[curIdx];
+        const os = ownedSet(m.id);
+        const ps = placedSet(m.id);
+        const preOwned = new Set(os);
+        const thisPackIds = new Set();
+        drawnCards = Array.from({length: 5}, () => {
+            const char = {...m.characters[Math.floor(Math.random() * m.characters.length)]};
+            if (ps.has(char.id)) char.badgeType = 'album';
+            else if (preOwned.has(char.id) || thisPackIds.has(char.id)) char.badgeType = 'repeat';
+            else char.badgeType = 'new';
+            thisPackIds.add(char.id);
+            os.add(char.id);
+            return char;
+        });
+        saveOwned();
+        revealIdx = 0;
+        setTimeout(() => {
+            packState = 'revealing';
+            renderPackModal();
+        }, 380);
+    }, 680);
+}
+
+function advanceReveal() {
+    revealIdx++;
+    if (revealIdx >= 5) { packState = 'done'; }
+    renderPackModal();
 }
 
 // ── Search dropdown ───────────────────────────────────────────
@@ -644,6 +941,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Init ──────────────────────────────────────────────────────
+document.getElementById('packWrap').addEventListener('click', openPackOverlay);
 render();
 </script>
 </body>

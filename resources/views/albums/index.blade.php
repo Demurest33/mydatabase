@@ -8,7 +8,9 @@
 </head>
 <body class="bg-[#0d1117] min-h-screen text-white">
 
-    <div class="max-w-6xl mx-auto px-4 py-12">
+    <x-navbar />
+
+    <div class="max-w-6xl mx-auto px-4 pt-24 pb-12">
 
         <div class="mb-10">
             <h1 class="text-4xl font-extrabold text-white">Álbumes</h1>

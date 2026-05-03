@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Cache\CacheKeys;
 use App\DTOs\CharacterDTO;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\Neo4jService;
 use Illuminate\Support\Facades\Cache;
@@ -36,7 +37,9 @@ class CharacterCrudController extends Controller
             $franchiseMedia[$franchise] = array_map(fn($d) => (object) $d, $items);
         }
 
-        return view('admin.characters.index', compact('grouped', 'franchiseMedia'));
+        $tags = $this->loadCharacterTags();
+
+        return view('admin.characters.index', compact('grouped', 'franchiseMedia', 'tags'));
     }
 
     private function buildRaw(): array
@@ -263,6 +266,52 @@ class CharacterCrudController extends Controller
         CacheKeys::forget(CacheKeys::onCharacterChange());
 
         return redirect()->route('admin.characters.index')->with('success', 'Character updated successfully.');
+    }
+
+    public function getTags(int $id): JsonResponse
+    {
+        $ids = [];
+        foreach ($this->neo4j->client()->run(
+            'MATCH (c:Character {id: $id})-[:HAS_TAG]->(t:Tag) RETURN t.id AS id',
+            ['id' => $id]
+        ) as $r) {
+            $ids[] = (int) $r->get('id');
+        }
+        return response()->json(['tag_ids' => $ids]);
+    }
+
+    public function updateTags(Request $request, int $id): JsonResponse
+    {
+        $tagIds = array_values(array_filter(array_map('intval', $request->input('tag_ids', []))));
+        $client = $this->neo4j->client();
+
+        $client->run(
+            'MATCH (c:Character {id: $id}) OPTIONAL MATCH (c)-[r:HAS_TAG]->() DELETE r',
+            ['id' => $id]
+        );
+
+        if (!empty($tagIds)) {
+            $client->run(
+                'MATCH (c:Character {id: $id})
+                 UNWIND $tagIds AS tagId
+                 MATCH (t:Tag {id: tagId})
+                 MERGE (c)-[:HAS_TAG]->(t)',
+                ['id' => $id, 'tagIds' => $tagIds]
+            );
+        }
+
+        CacheKeys::forget(CacheKeys::onCharacterChange());
+
+        // Return updated tags for the UI
+        $tags = [];
+        foreach ($client->run(
+            'MATCH (c:Character {id: $id})-[:HAS_TAG]->(t:Tag) RETURN t.id AS id, t.name AS name, t.category AS category ORDER BY t.category, t.name',
+            ['id' => $id]
+        ) as $r) {
+            $tags[] = ['id' => (int) $r->get('id'), 'name' => (string) $r->get('name'), 'category' => (string) $r->get('category')];
+        }
+
+        return response()->json(['success' => true, 'tags' => $tags, 'count' => count($tags)]);
     }
 
     private function loadCharacterTags(): array

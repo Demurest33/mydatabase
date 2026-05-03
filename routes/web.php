@@ -62,10 +62,15 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::resource('media', \App\Http\Controllers\Admin\MediaCrudController::class)->names('admin.media');
 
     Route::resource('characters', \App\Http\Controllers\Admin\CharacterCrudController::class)->names('admin.characters');
+    Route::get( '/characters/{id}/tags', [\App\Http\Controllers\Admin\CharacterCrudController::class, 'getTags'])   ->name('admin.characters.tags.get');
+    Route::patch('/characters/{id}/tags', [\App\Http\Controllers\Admin\CharacterCrudController::class, 'updateTags'])->name('admin.characters.tags.update');
 
     Route::resource('albums', \App\Http\Controllers\Admin\AlbumCrudController::class)->names('admin.albums');
 
     Route::resource('tags', \App\Http\Controllers\Admin\TagCrudController::class)->names('admin.tags')->except(['show']);
+
+    Route::get('/auto-tag',       [\App\Http\Controllers\Admin\AutoTagController::class, 'index'])  ->name('admin.auto-tag.index');
+    Route::post('/auto-tag/{id}', [\App\Http\Controllers\Admin\AutoTagController::class, 'process'])->name('admin.auto-tag.process');
 
     Route::get('/asset-type-images', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'index'])->name('admin.asset-type-images.index');
     Route::post('/asset-type-images/{type}', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'upsert'])->name('admin.asset-type-images.upsert')->where('type', '.+');

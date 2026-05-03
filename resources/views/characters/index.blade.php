@@ -22,7 +22,7 @@
     <div class="flex gap-6 items-start">
 
         {{-- ── Sidebar ── --}}
-        <aside class="w-56 flex-shrink-0 sticky top-24 self-start max-h-[calc(100vh-8rem)] flex flex-col gap-3 overflow-hidden">
+        <aside class="w-56 flex-shrink-0 sticky top-24 self-start max-h-[calc(100vh-8rem)] flex flex-col gap-2 overflow-hidden">
 
             {{-- Search --}}
             <div class="relative">
@@ -36,85 +36,118 @@
                        class="w-full bg-[#151921] border border-gray-700 focus:border-amber-500 text-white placeholder-gray-600 text-sm rounded-xl pl-9 pr-4 py-2.5 outline-none transition-colors">
             </div>
 
-            {{-- Filter header --}}
-            <div class="flex items-center justify-between px-1">
-                <span class="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Filtrar por media</span>
-                <button id="btn-select-all" type="button"
-                        class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold">
-                    Todo
+            {{-- Tab switcher --}}
+            <div class="flex rounded-xl bg-black/40 border border-gray-800 p-0.5 gap-0.5">
+                <button id="tab-btn-media" type="button" onclick="switchTab('media')"
+                        class="relative flex-1 py-1.5 text-xs font-bold rounded-lg transition-all
+                               bg-[#151921] text-white shadow-sm">
+                    Media
+                    <span id="tab-dot-media" class="hidden absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                </button>
+                <button id="tab-btn-tags" type="button" onclick="switchTab('tags')"
+                        class="relative flex-1 py-1.5 text-xs font-bold rounded-lg transition-all
+                               text-gray-500 hover:text-gray-300">
+                    Tags
+                    <span id="tab-dot-tags" class="hidden absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
                 </button>
             </div>
 
-            {{-- Tag filter --}}
-            @if(!empty($allTags))
-            <div class="border-t border-gray-800/60 pt-2 space-y-1">
+            {{-- ── Panel: Media ── --}}
+            <div id="panel-media" class="flex flex-col gap-2 flex-1 min-h-0">
                 <div class="flex items-center justify-between px-1">
-                    <span class="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Tags</span>
-                    <button id="btn-clear-tags" type="button"
-                            class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold hidden">
-                        Limpiar
+                    <span class="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Franquicia · Media</span>
+                    <button id="btn-select-all" type="button"
+                            class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold">
+                        Todo
                     </button>
                 </div>
-                @foreach($allTags as $category => $tagList)
-                <details class="group/tg">
-                    <summary class="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none list-none
-                                    text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
-                        <svg class="w-3 h-3 flex-shrink-0 transition-transform duration-150 group-open/tg:rotate-90"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-                        </svg>
-                        <span class="text-xs font-semibold truncate flex-1">{{ $category }}</span>
-                    </summary>
-                    <div class="mt-1 ml-2 pl-3 border-l border-gray-800 flex flex-wrap gap-1 pb-1">
-                        @foreach($tagList as $tag)
-                        <button type="button"
-                                data-tag-id="{{ $tag['id'] }}"
-                                class="tag-filter px-2 py-0.5 rounded-full text-[10px] font-semibold
-                                       border border-gray-700 text-gray-500 transition-all cursor-pointer
-                                       hover:border-indigo-500/50 hover:text-indigo-300">
-                            {{ $tag['name'] }}
+                <div class="overflow-y-auto flex-1 space-y-1 pr-0.5"
+                     style="scrollbar-color:#374151 transparent; scrollbar-width:thin;">
+                    @foreach($franchiseMedia as $franchise => $mediaItems)
+                    <details class="group/sf">
+                        <summary class="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none list-none
+                                        text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
+                            <svg class="w-3 h-3 flex-shrink-0 transition-transform duration-150 group-open/sf:rotate-90"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            <span class="text-xs font-semibold truncate flex-1">{{ $franchise }}</span>
+                            <span class="text-[10px] text-gray-600 flex-shrink-0">{{ count($mediaItems) }}</span>
+                        </summary>
+                        <div class="mt-1 ml-2 pl-3 border-l border-gray-800 space-y-0.5 pb-1">
+                            @foreach($mediaItems as $media)
+                            <label class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/5 cursor-pointer group/lbl">
+                                <input type="checkbox"
+                                       value="{{ $media->id }}"
+                                       class="media-filter w-3 h-3 rounded flex-shrink-0 cursor-pointer accent-amber-500"
+                                       checked>
+                                <span class="text-xs text-gray-500 group-hover/lbl:text-gray-200 truncate transition-colors leading-tight">
+                                    {{ $media->title }}
+                                </span>
+                            </label>
+                            @endforeach
+                        </div>
+                    </details>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- ── Panel: Tags ── --}}
+            <div id="panel-tags" class="hidden flex-col gap-2 flex-1 min-h-0">
+                <div class="flex items-center justify-between px-1 gap-2">
+                    <span class="text-[10px] font-bold text-gray-600 uppercase tracking-wider flex-shrink-0">Tags</span>
+                    <div class="flex items-center gap-1.5 ml-auto">
+                        {{-- AND / OR toggle --}}
+                        <div class="flex rounded-lg bg-black/50 border border-gray-800 p-0.5 gap-0.5">
+                            <button id="tag-logic-or" type="button" onclick="setTagLogic('or')"
+                                    class="px-1.5 py-0.5 rounded text-[9px] font-bold transition-all
+                                           bg-[#151921] text-gray-200 shadow-sm">
+                                Alguna
+                            </button>
+                            <button id="tag-logic-and" type="button" onclick="setTagLogic('and')"
+                                    class="px-1.5 py-0.5 rounded text-[9px] font-bold transition-all
+                                           text-gray-600 hover:text-gray-400">
+                                Todas
+                            </button>
+                        </div>
+                        <button id="btn-clear-tags" type="button"
+                                class="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors font-semibold hidden">
+                            Limpiar
                         </button>
-                        @endforeach
                     </div>
-                </details>
-                @endforeach
-            </div>
-            @endif
-
-            {{-- Franchise groups with media checkboxes --}}
-            <div class="overflow-y-auto flex-1 space-y-1 pr-0.5"
-                 style="scrollbar-color:#374151 transparent; scrollbar-width:thin;">
-
-                @foreach($franchiseMedia as $franchise => $mediaItems)
-
-                <details class="group/sf">
-                    <summary class="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none list-none
-                                    text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
-                        <svg class="w-3 h-3 flex-shrink-0 transition-transform duration-150 group-open/sf:rotate-90"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-                        </svg>
-                        <span class="text-xs font-semibold truncate flex-1">{{ $franchise }}</span>
-                        <span class="text-[10px] text-gray-600 flex-shrink-0">{{ count($mediaItems) }}</span>
-                    </summary>
-
-                    <div class="mt-1 ml-2 pl-3 border-l border-gray-800 space-y-0.5 pb-1">
-                        @foreach($mediaItems as $media)
-                        <label class="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/5 cursor-pointer group/lbl">
-                            <input type="checkbox"
-                                   value="{{ $media->id }}"
-                                   class="media-filter w-3 h-3 rounded flex-shrink-0 cursor-pointer accent-amber-500"
-                                   checked>
-                            <span class="text-xs text-gray-500 group-hover/lbl:text-gray-200 truncate transition-colors leading-tight">
-                                {{ $media->title }}
-                            </span>
-                        </label>
+                </div>
+                <div class="overflow-y-auto flex-1 space-y-2 pr-0.5"
+                     style="scrollbar-color:#374151 transparent; scrollbar-width:thin;">
+                    @if(!empty($allTags))
+                        @foreach($allTags as $category => $tagList)
+                        <details class="group/tg" open>
+                            <summary class="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none list-none
+                                            text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
+                                <svg class="w-3 h-3 flex-shrink-0 transition-transform duration-150 group-open/tg:rotate-90"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                <span class="text-xs font-semibold truncate flex-1">{{ $category }}</span>
+                            </summary>
+                            <div class="mt-1 ml-2 pl-3 border-l border-gray-800 flex flex-wrap gap-1 pb-1">
+                                @foreach($tagList as $tag)
+                                <button type="button"
+                                        data-tag-id="{{ $tag['id'] }}"
+                                        class="tag-filter px-2 py-0.5 rounded-full text-[10px] font-semibold
+                                               border border-gray-700 text-gray-500 transition-all cursor-pointer
+                                               hover:border-indigo-500/50 hover:text-indigo-300">
+                                    {{ $tag['name'] }}
+                                </button>
+                                @endforeach
+                            </div>
+                        </details>
                         @endforeach
-                    </div>
-                </details>
-
-                @endforeach
+                    @else
+                        <p class="text-gray-600 text-xs px-2 py-4 text-center">No hay tags creados todavía.</p>
+                    @endif
+                </div>
             </div>
+
         </aside>
 
         {{-- ── Main content ── --}}
@@ -227,11 +260,44 @@
 
     @push('scripts')
     <script>
+    // ── Tab switching ─────────────────────────────────────────────────────────
+    function switchTab(tab) {
+        const isMedia = tab === 'media';
+
+        const btnMedia  = document.getElementById('tab-btn-media');
+        const btnTags   = document.getElementById('tab-btn-tags');
+        const panMedia  = document.getElementById('panel-media');
+        const panTags   = document.getElementById('panel-tags');
+
+        btnMedia.className = `relative flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+            isMedia ? 'bg-[#151921] text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'
+        }`;
+        btnTags.className = `relative flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+            !isMedia ? 'bg-[#151921] text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'
+        }`;
+
+        panMedia.classList.toggle('hidden', !isMedia);
+        panMedia.classList.toggle('flex', isMedia);
+        panTags.classList.toggle('hidden', isMedia);
+        panTags.classList.toggle('flex', !isMedia);
+    }
+
     (function () {
         const searchInput  = document.getElementById('char-search');
         const noResults    = document.getElementById('no-results');
         const btnSelectAll = document.getElementById('btn-select-all');
         const btnClearTags = document.getElementById('btn-clear-tags');
+
+        let tagLogic = 'or';
+
+        window.setTagLogic = function (logic) {
+            tagLogic = logic;
+            const on  = 'px-1.5 py-0.5 rounded text-[9px] font-bold transition-all bg-[#151921] text-gray-200 shadow-sm';
+            const off = 'px-1.5 py-0.5 rounded text-[9px] font-bold transition-all text-gray-600 hover:text-gray-400';
+            document.getElementById('tag-logic-or').className  = logic === 'or'  ? on : off;
+            document.getElementById('tag-logic-and').className = logic === 'and' ? on : off;
+            applyFilter();
+        };
 
         let allSelected = true;
 
@@ -248,6 +314,8 @@
                 const checked = document.querySelectorAll('.media-filter:checked');
                 allSelected = all.length === checked.length;
                 btnSelectAll.textContent = allSelected ? 'Todo' : (checked.length === 0 ? 'Ninguno' : '···');
+                // Show dot on Media tab when not all selected
+                document.getElementById('tab-dot-media')?.classList.toggle('hidden', allSelected);
                 applyFilter();
             });
         });
@@ -263,6 +331,8 @@
                 btn.classList.toggle('text-gray-500', !isActive);
                 const anyActive = document.querySelectorAll('.tag-filter.active').length > 0;
                 btnClearTags?.classList.toggle('hidden', !anyActive);
+                // Show dot on Tags tab when any tag active
+                document.getElementById('tab-dot-tags')?.classList.toggle('hidden', !anyActive);
                 applyFilter();
             });
         });
@@ -273,6 +343,7 @@
                 btn.classList.add('border-gray-700', 'text-gray-500');
             });
             btnClearTags.classList.add('hidden');
+            document.getElementById('tab-dot-tags')?.classList.add('hidden');
             applyFilter();
         });
 
@@ -301,7 +372,11 @@
                         const tagIds       = card.dataset.tagIds ? card.dataset.tagIds.split(',').filter(Boolean) : [];
                         const matchesMedia  = !noMedia && (mediaIds.length === 0 || mediaIds.some(id => checkedIds.has(id)));
                         const matchesSearch = !query || card.dataset.name.includes(query);
-                        const matchesTags   = selectedTags.size === 0 || tagIds.some(tid => selectedTags.has(tid));
+                        const matchesTags   = selectedTags.size === 0 || (
+                            tagLogic === 'and'
+                                ? [...selectedTags].every(tid => tagIds.includes(tid))
+                                : tagIds.some(tid => selectedTags.has(tid))
+                        );
                         const visible = matchesMedia && matchesSearch && matchesTags;
                         card.style.display = visible ? '' : 'none';
                         if (visible) roleHasVisible = true;
@@ -317,7 +392,7 @@
 
             noResults.classList.toggle('hidden', anyVisible);
         }
-    })();
+    })(); // end filter IIFE
     </script>
     @endpush
 

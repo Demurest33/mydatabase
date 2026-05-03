@@ -179,11 +179,16 @@
                                 </div>
 
                                 {{-- Actions --}}
-                                <div class="opacity-0 group-hover/card:opacity-100 transition-opacity duration-150 px-2 pb-2.5 flex gap-1.5">
+                                <div class="opacity-0 group-hover/card:opacity-100 transition-opacity duration-150 px-2 pb-2.5 flex gap-1">
                                     <a href="{{ route('admin.characters.edit', $char->id) }}"
                                        class="flex-1 text-center text-[10px] font-bold bg-pink-500/20 hover:bg-pink-500/40 text-pink-300 rounded-lg py-1.5 transition-colors">
                                         Editar
                                     </a>
+                                    <button type="button"
+                                            onclick="TagModal.open({{ $char->id }}, {{ json_encode($char->name) }})"
+                                            class="flex-1 text-[10px] font-bold bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 rounded-lg py-1.5 transition-colors">
+                                        Tags
+                                    </button>
                                     <form action="{{ route('admin.characters.destroy', $char->id) }}" method="POST"
                                           class="flex-1"
                                           data-name="{{ $char->name ?? 'this character' }}"
@@ -220,8 +225,173 @@
         </div>
     </div>
 
+    {{-- ── Tag editor modal ─────────────────────────────────────────────────── --}}
+    <div id="tag-modal"
+         class="fixed inset-0 z-[100] hidden items-center justify-center p-4"
+         onclick="if(event.target===this) TagModal.close()">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div class="relative bg-[#151921] border border-gray-700 rounded-2xl w-full max-w-xl max-h-[85vh]
+                    flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 flex-shrink-0">
+                <div>
+                    <h3 class="text-white font-bold" id="modal-char-name">Personaje</h3>
+                    <p class="text-gray-500 text-xs">Editar tags</p>
+                </div>
+                <button onclick="TagModal.close()"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500
+                               hover:text-white hover:bg-white/10 transition-colors text-xl leading-none">
+                    ×
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div id="modal-body" class="overflow-y-auto flex-1 px-6 py-5"
+                 style="scrollbar-color:#374151 transparent; scrollbar-width:thin;">
+                <div class="flex items-center justify-center py-10 text-gray-500 text-sm">
+                    Cargando…
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 border-t border-gray-800 flex items-center justify-between flex-shrink-0">
+                <span id="modal-tag-count" class="text-xs text-gray-600"></span>
+                <div class="flex gap-3">
+                    <button onclick="TagModal.close()"
+                            class="px-5 py-2 rounded-xl text-sm font-semibold text-gray-400 hover:text-white
+                                   bg-white/5 hover:bg-white/10 transition-colors">
+                        Cancelar
+                    </button>
+                    <button id="modal-save-btn" onclick="TagModal.save()"
+                            class="px-5 py-2 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700
+                                   text-white transition-colors shadow-lg shadow-indigo-500/20">
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script>
+    // ── Tag editor modal ──────────────────────────────────────────────────────
+    const TagModal = (() => {
+        const ALL_TAGS  = @json($tags);   // { category: [{id, name}] }
+        const CSRF      = '{{ csrf_token() }}';
+        const BASE_URL  = '{{ url("admin/characters") }}';
+
+        let currentId   = null;
+        let saving      = false;
+
+        function esc(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function open(charId, charName) {
+            currentId = charId;
+            document.getElementById('modal-char-name').textContent = charName;
+            document.getElementById('modal-body').innerHTML =
+                '<div class="flex items-center justify-center py-10 text-gray-500 text-sm">Cargando…</div>';
+            document.getElementById('modal-tag-count').textContent = '';
+            document.getElementById('tag-modal').classList.remove('hidden');
+            document.getElementById('tag-modal').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            loadTags();
+        }
+
+        async function loadTags() {
+            try {
+                const res  = await fetch(`${BASE_URL}/${currentId}/tags`, { headers: {'Accept':'application/json'} });
+                const data = await res.json();
+                render(new Set(data.tag_ids.map(String)));
+            } catch(e) {
+                document.getElementById('modal-body').innerHTML =
+                    '<p class="text-red-400 text-sm text-center py-8">Error al cargar tags</p>';
+            }
+        }
+
+        function render(selectedIds) {
+            const body = document.getElementById('modal-body');
+
+            if (!ALL_TAGS || Object.keys(ALL_TAGS).length === 0) {
+                body.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">No hay tags de personaje creados todavía.</p>';
+                return;
+            }
+
+            let html = '<div class="space-y-5">';
+            for (const [category, tagList] of Object.entries(ALL_TAGS)) {
+                html += `<div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">${esc(category)}</p>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2">`;
+                for (const tag of tagList) {
+                    const checked = selectedIds.has(String(tag.id));
+                    html += `<label class="flex items-center gap-1.5 cursor-pointer select-none group/lbl">
+                        <input type="checkbox" value="${tag.id}" ${checked ? 'checked' : ''}
+                               class="tag-cb w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer flex-shrink-0">
+                        <span class="text-xs text-gray-400 group-hover/lbl:text-gray-200 transition-colors">${esc(tag.name)}</span>
+                    </label>`;
+                }
+                html += '</div></div>';
+            }
+            html += '</div>';
+
+            body.innerHTML = html;
+            updateCount();
+
+            body.querySelectorAll('.tag-cb').forEach(cb => cb.addEventListener('change', updateCount));
+        }
+
+        function updateCount() {
+            const n = document.querySelectorAll('.tag-cb:checked').length;
+            document.getElementById('modal-tag-count').textContent = n > 0 ? `${n} tag${n !== 1 ? 's' : ''} seleccionado${n !== 1 ? 's' : ''}` : '';
+        }
+
+        async function save() {
+            if (saving) return;
+            saving = true;
+            const btn = document.getElementById('modal-save-btn');
+            btn.textContent = 'Guardando…';
+            btn.disabled    = true;
+
+            const tagIds = [...document.querySelectorAll('.tag-cb:checked')].map(cb => parseInt(cb.value));
+
+            try {
+                const res  = await fetch(`${BASE_URL}/${currentId}/tags`, {
+                    method:  'PATCH',
+                    headers: {'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF},
+                    body:    JSON.stringify({tag_ids: tagIds}),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    close();
+                    // Flash the card green briefly
+                    const card = document.querySelector(`.char-card [onclick*="${currentId}"]`)?.closest('.char-card');
+                    if (card) {
+                        card.classList.add('ring-2','ring-indigo-500/60');
+                        setTimeout(() => card.classList.remove('ring-2','ring-indigo-500/60'), 1500);
+                    }
+                }
+            } catch(e) { /* silent */ }
+
+            btn.textContent = 'Guardar';
+            btn.disabled    = false;
+            saving = false;
+        }
+
+        function close() {
+            document.getElementById('tag-modal').classList.add('hidden');
+            document.getElementById('tag-modal').classList.remove('flex');
+            document.body.style.overflow = '';
+            currentId = null;
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+        return { open, close, save };
+    })();
+
+    // ── Character list filter ─────────────────────────────────────────────────
     (function () {
         const searchInput  = document.getElementById('char-search');
         const noResults    = document.getElementById('no-results');
@@ -289,7 +459,7 @@
 
             noResults.classList.toggle('hidden', anyVisible);
         }
-    })();
+    })(); // end filter IIFE
     </script>
     @endpush
 

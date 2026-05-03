@@ -28,6 +28,7 @@
                         ['route' => 'admin.characters.index','pattern'=> 'admin.characters.*', 'label' => 'Characters'],
                         ['route' => 'admin.albums.index',  'pattern' => 'admin.albums.*',     'label' => 'Albums'],
                         ['route' => 'admin.tags.index',    'pattern' => 'admin.tags.*',       'label' => 'Tags'],
+                        ['route' => 'admin.auto-tag.index','pattern'=> 'admin.auto-tag.*',   'label' => 'Auto-tag'],
                         ['route' => 'admin.assets.index',  'pattern' => 'admin.assets.*',     'label' => 'Assets'],
                         ['route' => 'admin.asset-type-images.index', 'pattern' => 'admin.asset-type-images.*', 'label' => 'Type Images'],
                     ];

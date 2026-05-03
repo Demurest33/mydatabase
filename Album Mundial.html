@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Álbum Mundial Web</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%; min-height: 100vh;
+  background: #1a1a2e;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Background ── */
+body {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255,215,0,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,150,255,0.07) 0%, transparent 50%),
+    #0e1117;
+}
+
+/* ── Selection nav ── */
+.sel-nav {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 18px 24px 0;
+  flex-wrap: wrap;
+}
+.sel-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 10px; border: none;
+  font-family: 'Inter'; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.5);
+  border: 1.5px solid rgba(255,255,255,0.08);
+}
+.sel-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.sel-btn.active { color: #fff; border-color: currentColor; }
+.sel-btn .flag { font-size: 20px; }
+.sel-btn .progress {
+  font-size: 10px; padding: 2px 6px; border-radius: 999px;
+  background: rgba(255,255,255,0.12); font-weight: 600;
+}
+
+/* ── Album container ── */
+.album-wrap {
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px 24px 40px;
+  perspective: 2000px;
+}
+.album-book {
+  display: flex;
+  width: 1180px; max-width: 98vw;
+  min-height: 680px;
+  border-radius: 4px 18px 18px 4px;
+  box-shadow:
+    -12px 0 40px rgba(0,0,0,0.8),
+    0 30px 60px rgba(0,0,0,0.7),
+    inset 0 0 0 1px rgba(255,255,255,0.04);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Left page (info) ── */
+.page-left {
+  width: 360px; flex-shrink: 0;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 28px 24px 24px;
+  /* Book spine shadow */
+  border-right: 6px solid rgba(0,0,0,0.35);
+  box-shadow: inset -8px 0 20px rgba(0,0,0,0.3);
+}
+.page-left::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 28px,
+    rgba(0,0,0,0.04) 28px, rgba(0,0,0,0.04) 29px
+  );
+  pointer-events: none;
+}
+
+/* ── Right page (stickers) ── */
+.page-right {
+  flex: 1; position: relative; overflow: hidden;
+  padding: 24px 28px 24px 22px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.page-right::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 28px,
+    rgba(0,0,0,0.04) 28px, rgba(0,0,0,0.04) 29px
+  );
+  pointer-events: none;
+}
+
+/* ── Team header (left page) ── */
+.team-header {
+  display: flex; flex-direction: column; gap: 12px;
+  position: relative; z-index: 2;
+}
+.team-flag-big {
+  font-size: 56px; line-height: 1; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+}
+.team-name {
+  font-family: 'Bebas Neue'; font-size: 52px; line-height: 1;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.team-conf {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.14em; opacity: 0.6;
+}
+.team-divider {
+  height: 2px; border-radius: 999px;
+  margin: 4px 0; width: 48px;
+}
+.team-info-grid {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+}
+.team-info-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px;
+}
+.team-info-label { opacity: 0.5; font-weight: 500; }
+.team-info-val { font-weight: 700; }
+
+/* ── Progress bar ── */
+.prog-wrap { margin-top: 16px; position: relative; z-index: 2; }
+.prog-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 8px; opacity: 0.7;
+}
+.prog-bar {
+  height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden;
+}
+.prog-fill {
+  height: 100%; border-radius: 999px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── Group info (left page bottom) ── */
+.group-box {
+  margin-top: auto; padding: 14px; border-radius: 12px;
+  background: rgba(0,0,0,0.2); position: relative; z-index: 2;
+}
+.group-title {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.12em; margin-bottom: 10px; opacity: 0.6;
+}
+.group-teams { display: flex; flex-direction: column; gap: 5px; }
+.group-team-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; padding: 4px 6px; border-radius: 6px;
+}
+.group-team-row.highlight { background: rgba(255,255,255,0.08); }
+.group-team-left { display: flex; align-items: center; gap: 6px; }
+.group-team-pts { font-weight: 800; font-size: 13px; }
+
+/* ── Page number ── */
+.page-num {
+  position: absolute; bottom: 14px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; opacity: 0.3;
+}
+.page-num.left { left: 20px; }
+.page-num.right { right: 20px; }
+
+/* ── Sticker grid header ── */
+.grid-section-title {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.14em; opacity: 0.45; flex-shrink: 0;
+}
+
+/* ── Sticker grid ── */
+.sticker-grid {
+  display: flex; flex-direction: column; gap: 10px; flex: 1;
+}
+.sticker-row { display: flex; gap: 10px; align-items: flex-start; }
+.sticker-row.centered { justify-content: center; }
+
+/* ── Individual sticker slot ── */
+.sticker-slot {
+  position: relative; flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.sticker-slot:hover { z-index: 100; }
+
+/* ── Empty sticker ── */
+.sticker-empty {
+  border-radius: 6px; border: 2px dashed rgba(255,255,255,0.18);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(0,0,0,0.15);
+  position: relative; overflow: hidden;
+}
+.sticker-empty:hover {
+  border-color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.06);
+  transform: scale(1.04);
+}
+.sticker-empty:hover .empty-plus { opacity: 1; transform: scale(1.1); }
+.sticker-empty:hover .sticker-code { opacity: 0.6; }
+.sticker-code {
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; opacity: 0.3; font-family: 'Bebas Neue';
+  font-size: 14px;
+}
+.empty-plus {
+  font-size: 18px; opacity: 0.2; transition: all 0.2s;
+}
+
+/* ── Filled sticker ── */
+.sticker-filled {
+  border-radius: 6px; overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.1);
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  cursor: pointer;
+}
+.sticker-filled:hover {
+  transform: scale(1.08) translateY(-4px) rotate(-1deg);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.3);
+  z-index: 200;
+}
+.sticker-filled:hover .sticker-shine { opacity: 1; }
+.sticker-bg {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+}
+.sticker-number {
+  font-family: 'Bebas Neue'; font-size: 11px; letter-spacing: 0.06em;
+  padding: 4px 6px 2px;
+  position: absolute; top: 0; left: 0;
+  z-index: 3;
+}
+.sticker-photo-area {
+  flex: 1; display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden; position: relative;
+  font-size: 42px; padding-bottom: 4px;
+}
+.sticker-name-bar {
+  padding: 4px 6px;
+  font-size: 8px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.06em; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sticker-shine {
+  position: absolute; inset: 0; border-radius: 6px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, transparent 50%);
+  opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 10;
+}
+
+/* ── Tooltip card ── */
+.tooltip-card {
+  position: absolute;
+  width: 180px;
+  background: rgba(10,10,20,0.97);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 14px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(8px) scale(0.95);
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+  backdrop-filter: blur(20px);
+}
+.sticker-slot:hover .tooltip-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.tooltip-card.above { bottom: calc(100% + 10px); left: 50%; transform-origin: bottom center; }
+.tooltip-card.below { top: calc(100% + 10px); left: 50%; transform-origin: top center; }
+.sticker-slot:hover .tooltip-card.above { transform: translateX(-50%) translateY(0) scale(1); }
+.sticker-slot:hover .tooltip-card.below { transform: translateX(-50%) translateY(0) scale(1); }
+.tooltip-card.above { transform: translateX(-50%) translateY(8px) scale(0.95); }
+.tooltip-card.below { transform: translateX(-50%) translateY(-8px) scale(0.95); }
+
+.tt-emoji { font-size: 36px; text-align: center; margin-bottom: 8px; }
+.tt-name { font-size: 13px; font-weight: 800; text-align: center; color: #fff; line-height: 1.2; }
+.tt-pos { font-size: 10px; font-weight: 600; text-align: center; margin-top: 2px; margin-bottom: 10px; border-radius: 999px; padding: 2px 8px; display: inline-block; }
+.tt-stats { display: flex; flex-direction: column; gap: 5px; }
+.tt-stat { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+.tt-stat-label { color: rgba(255,255,255,0.45); }
+.tt-stat-val { font-weight: 700; color: #fff; }
+.tt-club { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 6px; }
+.tt-club-name { font-size: 10px; color: rgba(255,255,255,0.5); }
+
+/* ── Paste animation ── */
+@keyframes peel-drop {
+  0%   { transform: translateY(-60px) rotate(-8deg) scale(0.7); opacity: 0; }
+  60%  { transform: translateY(6px) rotate(1.5deg) scale(1.05); opacity: 1; }
+  80%  { transform: translateY(-3px) rotate(-0.5deg) scale(0.99); opacity: 1; }
+  100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+}
+@keyframes sparkle {
+  0%   { transform: scale(0) rotate(0deg); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: scale(1.8) rotate(45deg); opacity: 0; }
+}
+@keyframes shimmer {
+  0%   { left: -100%; }
+  100% { left: 200%; }
+}
+.placing .sticker-filled {
+  animation: peel-drop 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.sparkle-burst {
+  position: absolute; inset: 0; pointer-events: none; z-index: 999;
+}
+.spark {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  animation: sparkle 0.5s ease-out forwards;
+}
+
+/* ── FIFA logo watermark ── */
+.fifa-logo {
+  position: absolute; top: 18px; right: 18px;
+  font-size: 9px; font-weight: 900; letter-spacing: 0.2em;
+  text-transform: uppercase; opacity: 0.15;
+  line-height: 1.3; text-align: right;
+}
+
+/* ── Shimmer on empty hover ── */
+.sticker-empty::after {
+  content: '';
+  position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  transition: none;
+}
+.sticker-empty:hover::after {
+  animation: shimmer 0.6s ease-out;
+}
+
+/* ── Intro text ── */
+.album-title-bar {
+  text-align: center; padding: 14px 0 0;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.18em; color: rgba(255,255,255,0.25);
+}
+
+/* ── Shake hint ── */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+</style>
+</head>
+<body>
+
+<div class="album-title-bar">⚽ Álbum Oficial · FIFA World Cup 2026</div>
+
+<!-- SELECTION NAV -->
+<nav class="sel-nav" id="selNav"></nav>
+
+<!-- ALBUM BOOK -->
+<div class="album-wrap">
+  <div class="album-book" id="albumBook"></div>
+</div>
+
+<script>
+// ── Data ────────────────────────────────────────────────────
+const TEAMS = [
+  {
+    id: 'BRA', name: 'Brazil', flag: '🇧🇷', conf: 'CONMEBOL',
+    color1: '#009c3b', color2: '#ffdf00', textColor: '#fff', accentText: '#ffdf00',
+    group: 'G', coach: 'Dorival Júnior', worldCups: 5,
+    bg: 'linear-gradient(160deg, #005c22 0%, #009c3b 40%, #ffdf00 100%)',
+    pageBg: 'linear-gradient(135deg, #003d16 0%, #005c22 60%, #002b0f 100%)',
+    groupTeams: [
+      { flag:'🇧🇷', name:'Brazil',    pts:7 },
+      { flag:'🇨🇲', name:'Cameroon',  pts:4 },
+      { flag:'🇷🇸', name:'Serbia',    pts:3 },
+      { flag:'🇨🇭', name:'Switzer.',  pts:2 },
+    ],
+    players: [
+      { code:'BRA 1', num:1,  name:'Alisson',    pos:'GK', emoji:'🧤', age:31, caps:68,  goals:0,  club:'Liverpool',       rating:92 },
+      { code:'BRA 2', num:2,  name:'Danilo',     pos:'RB', emoji:'🛡️', age:32, caps:94,  goals:5,  club:'Juventus',        rating:83 },
+      { code:'BRA 3', num:3,  name:'Marquinhos', pos:'CB', emoji:'🦁', age:29, caps:82,  goals:9,  club:'PSG',             rating:88 },
+      { code:'BRA 4', num:4,  name:'Militão',    pos:'CB', emoji:'💪', age:25, caps:41,  goals:3,  club:'Real Madrid',     rating:87 },
+      { code:'BRA 5', num:5,  name:'Paquetá',    pos:'CM', emoji:'🎯', age:26, caps:49,  goals:8,  club:'West Ham',        rating:85 },
+      { code:'BRA 6', num:6,  name:'Casemiro',   pos:'DM', emoji:'⚙️', age:31, caps:72,  goals:8,  club:'Man. United',     rating:87 },
+      { code:'BRA 7', num:7,  name:'Vinícius Jr',pos:'LW', emoji:'⚡', age:23, caps:29,  goals:11, club:'Real Madrid',     rating:92 },
+      { code:'BRA 8', num:8,  name:'Rodrygo',    pos:'RW', emoji:'🔥', age:22, caps:26,  goals:8,  club:'Real Madrid',     rating:86 },
+      { code:'BRA 9', num:9,  name:'Richarlison', pos:'ST', emoji:'🐽', age:26, caps:51,  goals:19, club:'Tottenham',       rating:84 },
+      { code:'BRA 10',num:10, name:'Neymar Jr',  pos:'CF', emoji:'👑', age:32, caps:121, goals:79, club:'Al-Hilal',        rating:89 },
+      { code:'BRA 11',num:11, name:'Raphinha',   pos:'RW', emoji:'🌪️', age:27, caps:33,  goals:12, club:'Barcelona',       rating:84 },
+      null,
+      { code:'BRA 13',num:13, name:'Fred',       pos:'DM', emoji:'🔧', age:30, caps:53,  goals:3,  club:'Man. United',     rating:82 },
+      null,
+      null,
+      { code:'BRA 16',num:16, name:'Gabi Martins',pos:'LW',emoji:'⭐', age:26, caps:21,  goals:8,  club:'Wolfsburg',       rating:81 },
+    ],
+    placed: [0,1,2,4,5,6,7,8,9,10,12,15] // indices placed
+  },
+  {
+    id: 'ARG', name: 'Argentina', flag: '🇦🇷', conf: 'CONMEBOL',
+    color1: '#74acdf', color2: '#fff', textColor: '#fff', accentText: '#74acdf',
+    group: 'C', coach: 'Lionel Scaloni', worldCups: 3,
+    bg: 'linear-gradient(160deg, #1a4f8a 0%, #74acdf 50%, #fff 100%)',
+    pageBg: 'linear-gradient(135deg, #0d2b52 0%, #1a4f8a 60%, #0a1f3d 100%)',
+    groupTeams: [
+      { flag:'🇦🇷', name:'Argentina', pts:9 },
+      { flag:'🇲🇽', name:'Mexico',    pts:4 },
+      { flag:'🇵🇱', name:'Poland',    pts:4 },
+      { flag:'🇸🇦', name:'S. Arabia', pts:3 },
+    ],
+    players: [
+      { code:'ARG 1', num:1,  name:'E. Martínez', pos:'GK', emoji:'🧤', age:31, caps:60,  goals:0,  club:'Aston Villa',   rating:90 },
+      { code:'ARG 2', num:2,  name:'Molina',      pos:'RB', emoji:'🚀', age:25, caps:31,  goals:5,  club:'Atlético Madrid',rating:84 },
+      { code:'ARG 3', num:3,  name:'Tagliafico',  pos:'LB', emoji:'🛡️', age:31, caps:65,  goals:5,  club:'Lyon',          rating:82 },
+      { code:'ARG 4', num:4,  name:'Romero',      pos:'CB', emoji:'💪', age:25, caps:34,  goals:4,  club:'Tottenham',     rating:86 },
+      { code:'ARG 5', num:5,  name:'Paredes',     pos:'DM', emoji:'⚙️', age:29, caps:56,  goals:5,  club:'Roma',          rating:83 },
+      { code:'ARG 6', num:6,  name:'Mac Allister', pos:'CM', emoji:'🎯', age:24, caps:26,  goals:6,  club:'Liverpool',     rating:86 },
+      { code:'ARG 7', num:7,  name:'Di María',    pos:'RW', emoji:'🦋', age:35, caps:129, goals:31, club:'Benfica',       rating:84 },
+      { code:'ARG 8', num:8,  name:'De Paul',     pos:'CM', emoji:'🔥', age:29, caps:61,  goals:9,  club:'Atlético Madrid',rating:85 },
+      { code:'ARG 9', num:9,  name:'Lautaro',     pos:'ST', emoji:'🐂', age:26, caps:59,  goals:30, club:'Inter Milan',   rating:89 },
+      { code:'ARG 10',num:10, name:'Messi',       pos:'CF', emoji:'🐐', age:36, caps:180, goals:106,club:'Inter Miami',   rating:95 },
+      { code:'ARG 11',num:11, name:'J. Álvarez',  pos:'ST', emoji:'⚡', age:23, caps:21,  goals:10, club:'Man. City',     rating:85 },
+      null,
+      null,
+      { code:'ARG 14',num:14, name:'Acuña',       pos:'LB', emoji:'🌀', age:31, caps:53,  goals:5,  club:'Sevilla',       rating:82 },
+      null,
+      { code:'ARG 16',num:16, name:'Dybala',      pos:'AM', emoji:'🌟', age:29, caps:38,  goals:29, club:'Roma',          rating:86 },
+    ],
+    placed: [0,1,2,3,4,5,6,7,8,9,10,13,15]
+  },
+  {
+    id: 'ESP', name: 'España', flag: '🇪🇸', conf: 'UEFA',
+    color1: '#c60b1e', color2: '#ffc400', textColor: '#fff', accentText: '#ffc400',
+    group: 'E', coach: 'Luis de la Fuente', worldCups: 1,
+    bg: 'linear-gradient(160deg, #8c0012 0%, #c60b1e 50%, #ffc400 100%)',
+    pageBg: 'linear-gradient(135deg, #5c0008 0%, #8c0012 60%, #3d0005 100%)',
+    groupTeams: [
+      { flag:'🇪🇸', name:'España',   pts:7 },
+      { flag:'🇩🇪', name:'Alemania', pts:6 },
+      { flag:'🇯🇵', name:'Japón',    pts:6 },
+      { flag:'🇨🇷', name:'Costa R.', pts:0 },
+    ],
+    players: [
+      { code:'ESP 1', num:1,  name:'Unai Simón',  pos:'GK', emoji:'🧤', age:26, caps:33,  goals:0,  club:'Ath. Bilbao',  rating:84 },
+      { code:'ESP 2', num:2,  name:'Carvajal',    pos:'RB', emoji:'🛡️', age:31, caps:53,  goals:4,  club:'Real Madrid',  rating:86 },
+      { code:'ESP 3', num:3,  name:'Gayà',        pos:'LB', emoji:'💨', age:28, caps:18,  goals:0,  club:'Valencia',     rating:81 },
+      { code:'ESP 4', num:4,  name:'Le Normand',  pos:'CB', emoji:'🗼', age:26, caps:12,  goals:1,  club:'Sociedad',     rating:83 },
+      { code:'ESP 5', num:5,  name:'Rodri',       pos:'DM', emoji:'🏆', age:27, caps:42,  goals:5,  club:'Man. City',    rating:92 },
+      { code:'ESP 6', num:6,  name:'Gavi',        pos:'CM', emoji:'🌀', age:19, caps:37,  goals:5,  club:'Barcelona',    rating:87 },
+      { code:'ESP 7', num:7,  name:'Morata',      pos:'ST', emoji:'🎯', age:30, caps:66,  goals:35, club:'Atlético',     rating:83 },
+      { code:'ESP 8', num:8,  name:'Pedri',       pos:'CM', emoji:'🎨', age:21, caps:31,  goals:5,  club:'Barcelona',    rating:88 },
+      { code:'ESP 9', num:9,  name:'Yamal',       pos:'RW', emoji:'⭐', age:16, caps:8,   goals:3,  club:'Barcelona',    rating:86 },
+      { code:'ESP 10',num:10, name:'Olmo',        pos:'AM', emoji:'🔮', age:25, caps:29,  goals:11, club:'Leipzig',      rating:85 },
+      { code:'ESP 11',num:11, name:'Williams A.', pos:'LW', emoji:'🦅', age:21, caps:10,  goals:4,  club:'Ath. Bilbao',  rating:83 },
+      { code:'ESP 12',num:12, name:'Joselu',      pos:'ST', emoji:'💥', age:33, caps:9,   goals:6,  club:'Real Madrid',  rating:80 },
+      null,
+      null,
+      { code:'ESP 15',num:15, name:'Fabián Ruiz', pos:'CM', emoji:'🎶', age:27, caps:28,  goals:5,  club:'PSG',          rating:84 },
+      null,
+    ],
+    placed: [0,1,2,4,5,6,7,8,9,10,11,14]
+  },
+  {
+    id: 'FRA', name: 'France', flag: '🇫🇷', conf: 'UEFA',
+    color1: '#002395', color2: '#ed2939', textColor: '#fff', accentText: '#ed2939',
+    group: 'D', coach: 'Didier Deschamps', worldCups: 2,
+    bg: 'linear-gradient(160deg, #001a6e 0%, #002395 50%, #ed2939 100%)',
+    pageBg: 'linear-gradient(135deg, #000e3a 0%, #001a6e 60%, #000820 100%)',
+    groupTeams: [
+      { flag:'🇫🇷', name:'France',   pts:6 },
+      { flag:'🇦🇺', name:'Australia',pts:6 },
+      { flag:'🇩🇰', name:'Denmark',  pts:3 },
+      { flag:'🇹🇳', name:'Túnez',    pts:1 },
+    ],
+    players: [
+      { code:'FRA 1', num:1,  name:'Maignan',     pos:'GK', emoji:'🧤', age:28, caps:21,  goals:0,  club:'AC Milan',      rating:87 },
+      { code:'FRA 2', num:2,  name:'Pavard',      pos:'RB', emoji:'🛡️', age:27, caps:52,  goals:4,  club:'Inter Milan',   rating:85 },
+      { code:'FRA 3', num:3,  name:'T. Hernández',pos:'LB', emoji:'⚡', age:27, caps:37,  goals:8,  club:'AC Milan',      rating:86 },
+      { code:'FRA 4', num:4,  name:'Upamecano',   pos:'CB', emoji:'🧱', age:25, caps:30,  goals:1,  club:'Bayern Munich', rating:85 },
+      { code:'FRA 5', num:5,  name:'Tchouaméni',  pos:'DM', emoji:'⚙️', age:23, caps:24,  goals:3,  club:'Real Madrid',   rating:85 },
+      { code:'FRA 6', num:6,  name:'Camavinga',   pos:'CM', emoji:'🌪️', age:20, caps:19,  goals:2,  club:'Real Madrid',   rating:84 },
+      { code:'FRA 7', num:7,  name:'Griezmann',   pos:'AM', emoji:'🦊', age:32, caps:120, goals:44, club:'Atlético',      rating:87 },
+      { code:'FRA 8', num:8,  name:'Rabiot',      pos:'CM', emoji:'🎯', age:28, caps:48,  goals:8,  club:'Juventus',      rating:83 },
+      { code:'FRA 9', num:9,  name:'Giroud',      pos:'ST', emoji:'🦁', age:37, caps:116, goals:57, club:'AC Milan',      rating:81 },
+      { code:'FRA 10',num:10, name:'Mbappé',      pos:'CF', emoji:'💨', age:24, caps:75,  goals:44, club:'Real Madrid',   rating:95 },
+      { code:'FRA 11',num:11, name:'Dembelé',     pos:'RW', emoji:'🔥', age:26, caps:42,  goals:10, club:'Barcelona',     rating:85 },
+      null,
+      null,
+      { code:'FRA 14',num:14, name:'Coman',       pos:'LW', emoji:'🌟', age:27, caps:46,  goals:14, club:'Bayern Munich', rating:83 },
+      null,
+      { code:'FRA 16',num:16, name:'Saliba',      pos:'CB', emoji:'🏰', age:22, caps:18,  goals:1,  club:'Arsenal',       rating:86 },
+    ],
+    placed: [0,1,2,3,4,5,6,7,8,9,10,13,15]
+  }
+];
+
+// ── State ───────────────────────────────────────────────────
+let currentTeam = TEAMS[0];
+let placedSet = new Set(currentTeam.placed);
+
+// ── Helpers ─────────────────────────────────────────────────
+function posColor(pos, t) {
+  const map = { GK:'#f59e0b', CB:'#3b82f6', RB:'#3b82f6', LB:'#3b82f6', DM:'#8b5cf6', CM:'#8b5cf6', AM:'#ec4899', RW:'#10b981', LW:'#10b981', ST:'#ef4444', CF:'#ef4444' };
+  return map[pos] || '#6b7280';
+}
+
+function getPlayerSize(index, t) {
+  // Big spots: index 0 (GK, solo row)
+  if (index === 0) return { w: 90, h: 120 };
+  return { w: 80, h: 106 };
+}
+
+// ── Render ──────────────────────────────────────────────────
+function render() {
+  renderNav();
+  renderAlbum();
+}
+
+function renderNav() {
+  const nav = document.getElementById('selNav');
+  nav.innerHTML = '';
+  TEAMS.forEach(t => {
+    const placed = t.placed.length;
+    const total = t.players.filter(Boolean).length;
+    const btn = document.createElement('button');
+    btn.className = 'sel-btn' + (t.id === currentTeam.id ? ' active' : '');
+    btn.style.cssText = t.id === currentTeam.id
+      ? `color:${t.color2}; border-color:${t.color2}; background:rgba(255,255,255,0.07);`
+      : '';
+    btn.innerHTML = `<span class="flag">${t.flag}</span> ${t.name} <span class="progress">${placed}/${total}</span>`;
+    btn.onclick = () => { currentTeam = t; placedSet = new Set(t.placed); render(); };
+    nav.appendChild(btn);
+  });
+}
+
+function renderAlbum() {
+  const book = document.getElementById('albumBook');
+  const t = currentTeam;
+  const totalPlayers = t.players.filter(Boolean).length;
+  const placedCount = [...placedSet].filter(i => t.players[i] !== null && t.players[i] !== undefined).length;
+  const pct = Math.round((placedCount / totalPlayers) * 100);
+
+  book.style.cssText = '';
+  book.innerHTML = `
+    <!-- LEFT PAGE -->
+    <div class="page-left" style="background:${t.pageBg}; color:${t.textColor};">
+      <div class="team-header">
+        <div class="team-flag-big">${t.flag}</div>
+        <div class="team-name" style="color:${t.accentText};">${t.name.toUpperCase()}</div>
+        <div class="team-conf">${t.conf} · Grupo ${t.group}</div>
+        <div class="team-divider" style="background:${t.accentText};"></div>
+        <div class="team-info-grid">
+          <div class="team-info-row">
+            <span class="team-info-label">Entrenador</span>
+            <span class="team-info-val">${t.coach}</span>
+          </div>
+          <div class="team-info-row">
+            <span class="team-info-label">Mundiales</span>
+            <span class="team-info-val" style="color:${t.accentText};">${'⭐'.repeat(Math.min(t.worldCups,5))}</span>
+          </div>
+          <div class="team-info-row">
+            <span class="team-info-label">Confederación</span>
+            <span class="team-info-val">${t.conf}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="prog-wrap">
+        <div class="prog-label">
+          <span>Progreso</span>
+          <span style="color:${t.accentText};">${placedCount}/${totalPlayers}</span>
+        </div>
+        <div class="prog-bar">
+          <div class="prog-fill" style="width:${pct}%; background:${t.accentText};"></div>
+        </div>
+      </div>
+
+      <div class="group-box" style="border:1px solid rgba(255,255,255,0.08);">
+        <div class="group-title">Grupo ${t.group}</div>
+        <div class="group-teams">
+          ${t.groupTeams.map(gt => `
+            <div class="group-team-row ${gt.name === t.name || gt.name === t.id ? 'highlight' : ''}">
+              <div class="group-team-left">
+                <span>${gt.flag}</span>
+                <span style="font-size:12px;">${gt.name}</span>
+              </div>
+              <span class="group-team-pts" style="color:${t.accentText};">${gt.pts}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="fifa-logo">FIFA<br>WORLD CUP<br>2026™</div>
+      <div class="page-num left">${t.id} · ${t.players.filter(Boolean).length} STICKERS</div>
+    </div>
+
+    <!-- RIGHT PAGE -->
+    <div class="page-right" style="background:${t.pageBg}; color:${t.textColor};" id="rightPage">
+      <div class="fifa-logo">FIFA<br>WORLD CUP<br>2026™</div>
+      <div class="grid-section-title">PLANTILLA OFICIAL · ${t.name.toUpperCase()} · FIFA WORLD CUP 2026™</div>
+      <div id="stickerGrid" class="sticker-grid"></div>
+      <div class="page-num right">58 · ${t.id}</div>
+    </div>
+  `;
+
+  renderGrid();
+}
+
+function renderGrid() {
+  const t = currentTeam;
+  const grid = document.getElementById('stickerGrid');
+  grid.innerHTML = '';
+
+  // Layout: rows of stickers
+  // Row 0: GK alone (index 0) — big
+  // Rows 1-3: 5 per row (indices 1-15)
+  const rows = [
+    [0],
+    [1, 2, 3, 4, 5],
+    [6, 7, 8, 9, 10],
+    [11, 12, 13, 14, 15],
+  ];
+
+  rows.forEach((rowIndices, rowIdx) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'sticker-row' + (rowIdx === 0 ? ' centered' : '');
+    rowEl.style.justifyContent = rowIdx === 0 ? 'flex-start' : 'flex-start';
+    rowEl.style.gap = '10px';
+
+    rowIndices.forEach(idx => {
+      if (idx >= t.players.length) return;
+      const player = t.players[idx];
+      const size = rowIdx === 0 ? { w: 100, h: 132 } : { w: 80, h: 106 };
+      const isPlaced = placedSet.has(idx);
+
+      const slot = document.createElement('div');
+      slot.className = 'sticker-slot';
+      slot.dataset.idx = idx;
+      slot.style.width = size.w + 'px';
+      slot.style.height = size.h + 'px';
+
+      if (!player) {
+        // Empty unavailable slot (null = no player defined)
+        slot.innerHTML = `<div class="sticker-empty" style="width:${size.w}px;height:${size.h}px;opacity:0.25; cursor:default;"></div>`;
+      } else if (isPlaced) {
+        // Filled sticker
+        slot.innerHTML = buildFilledSticker(player, size, t, idx);
+      } else {
+        // Empty slot
+        slot.innerHTML = buildEmptySticker(player, size, t);
+        slot.querySelector('.sticker-empty').addEventListener('click', () => placeSticker(idx, slot, size, t, player));
+      }
+
+      rowEl.appendChild(slot);
+    });
+
+    grid.appendChild(rowEl);
+  });
+}
+
+function buildFilledSticker(p, size, t, idx) {
+  const above = idx >= 6; // show tooltip above for bottom rows
+  return `
+    <div class="sticker-filled" style="width:${size.w}px;height:${size.h}px;">
+      <div class="sticker-bg" style="background:${t.bg};">
+        <div class="sticker-number" style="color:${t.accentText};">${p.num}</div>
+        <div class="sticker-photo-area" style="font-size:${size.h * 0.38}px;">${p.emoji}</div>
+        <div class="sticker-name-bar" style="background:rgba(0,0,0,0.55);color:#fff;">${p.name}</div>
+      </div>
+      <div class="sticker-shine"></div>
+    </div>
+    <div class="tooltip-card ${above ? 'above' : 'below'}">
+      <div class="tt-emoji">${p.emoji}</div>
+      <div class="tt-name">${p.name}</div>
+      <div class="tt-pos" style="background:${posColor(p.pos)}22;color:${posColor(p.pos)};">${p.pos}</div>
+      <div class="tt-stats">
+        <div class="tt-stat"><span class="tt-stat-label">Edad</span><span class="tt-stat-val">${p.age} años</span></div>
+        <div class="tt-stat"><span class="tt-stat-label">Partidos</span><span class="tt-stat-val">${p.caps}</span></div>
+        <div class="tt-stat"><span class="tt-stat-label">Goles</span><span class="tt-stat-val">${p.goals}</span></div>
+        <div class="tt-stat"><span class="tt-stat-label">Rating</span><span class="tt-stat-val" style="color:${ratingColor(p.rating)};">${p.rating}</span></div>
+      </div>
+      <div class="tt-club">
+        <span style="font-size:18px;">🏟️</span>
+        <span class="tt-club-name">${p.club}</span>
+      </div>
+    </div>
+  `;
+}
+
+function buildEmptySticker(p, size, t) {
+  return `
+    <div class="sticker-empty" style="width:${size.w}px;height:${size.h}px;border-color:${t.color2}44;">
+      <div class="sticker-code" style="color:${t.accentText};">${p.code}</div>
+      <div class="empty-plus" style="color:${t.accentText};">+</div>
+    </div>
+  `;
+}
+
+function ratingColor(r) {
+  if (r >= 90) return '#f59e0b';
+  if (r >= 85) return '#10b981';
+  if (r >= 80) return '#3b82f6';
+  return '#9ca3af';
+}
+
+function placeSticker(idx, slot, size, t, player) {
+  // Already placing? skip
+  if (slot.classList.contains('placing')) return;
+
+  // Mark as placing
+  slot.classList.add('placing');
+
+  // Replace content with filled sticker
+  slot.innerHTML = buildFilledSticker(player, size, t, idx) + buildSparkles(size, t);
+
+  // After animation, mark as placed
+  setTimeout(() => {
+    slot.classList.remove('placing');
+    placedSet.add(idx);
+    // Remove sparkles
+    const sparkleBurst = slot.querySelector('.sparkle-burst');
+    if (sparkleBurst) sparkleBurst.remove();
+    // Re-render progress
+    updateProgress(t);
+  }, 600);
+}
+
+function buildSparkles(size, t) {
+  const colors = [t.color2, t.color1, '#fff', t.accentText];
+  let sparks = '';
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * 360;
+    const dist = 20 + Math.random() * 20;
+    const x = 50 + Math.cos(angle * Math.PI/180) * dist;
+    const y = 50 + Math.sin(angle * Math.PI/180) * dist;
+    const color = colors[i % colors.length];
+    const delay = Math.random() * 0.15;
+    sparks += `<div class="spark" style="left:${x}%;top:${y}%;background:${color};width:${4+Math.random()*5}px;height:${4+Math.random()*5}px;animation-delay:${delay}s;"></div>`;
+  }
+  return `<div class="sparkle-burst">${sparks}</div>`;
+}
+
+function updateProgress(t) {
+  const totalPlayers = t.players.filter(Boolean).length;
+  const placedCount = [...placedSet].filter(i => t.players[i] !== null && t.players[i] !== undefined).length;
+  const pct = Math.round((placedCount / totalPlayers) * 100);
+  const fill = document.querySelector('.prog-fill');
+  const label = document.querySelector('.prog-label span:last-child');
+  if (fill) fill.style.width = pct + '%';
+  if (label) label.textContent = `${placedCount}/${totalPlayers}`;
+  // Update nav
+  renderNav();
+}
+
+// ── Init ─────────────────────────────────────────────────────
+render();
+</script>
+
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56">
+  <rect width="80" height="56" fill="#0e1117"/>
+  <rect x="8" y="8" width="30" height="40" rx="3" fill="#005c22"/>
+  <rect x="42" y="8" width="30" height="40" rx="3" fill="#003d16"/>
+  <rect x="44" y="12" width="12" height="16" rx="2" fill="#009c3b"/>
+  <rect x="58" y="12" width="12" height="16" rx="2" fill="#ffdf00" opacity=".7"/>
+  <rect x="44" y="30" width="12" height="16" rx="2" fill="#009c3b" opacity=".5"/>
+  <rect x="58" y="30" width="12" height="16" rx="2" fill="#009c3b" opacity=".5"/>
+  <text x="40" y="54" font-size="5" fill="rgba(255,255,255,0.3)" text-anchor="middle" font-family="sans-serif">⚽ ÁLBUM MUNDIAL</text>
+</svg>
+</template>
+</body>
+</html>

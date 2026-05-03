@@ -71,6 +71,35 @@ final class CacheKeys
     /** All franchises (admin backoffice). */
     public const ADMIN_FRANCHISES_INDEX = 'admin.franchises.index';
 
+    // ── Albums ───────────────────────────────────────────────────────────────
+
+    /** All albums listing (public). */
+    public const ALBUMS_INDEX = 'albums.index';
+
+    /** Admin albums listing. */
+    public const ADMIN_ALBUMS_INDEX = 'admin.albums.index';
+
+    /** Detail for one album (public show page). */
+    public static function albumDetail(int $id): string
+    {
+        return 'albums.detail.' . $id;
+    }
+
+    /** Keys to forget when any Album changes. */
+    public static function onAlbumChange(int $albumId = 0): array
+    {
+        $keys = [
+            self::ALBUMS_INDEX,
+            self::ADMIN_ALBUMS_INDEX,
+        ];
+
+        if ($albumId) {
+            $keys[] = self::albumDetail($albumId);
+        }
+
+        return $keys;
+    }
+
     // ── Invalidation groups ──────────────────────────────────────────────────
 
     /**

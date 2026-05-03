@@ -8,6 +8,7 @@ use App\Http\Controllers\AssetController;
 use App\Http\Controllers\FranchiseController;
 use App\Http\Controllers\WouldYouRatherController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\AlbumController;
 
 Route::get('/', [AssetController::class, 'index'])->name('home');
 
@@ -30,6 +31,9 @@ Route::get('/characters', [CharacterController::class, 'index'])->name('characte
 Route::get('/api/characters/search', [CharacterController::class, 'searchJson'])->name('api.characters.search');
 Route::get('/characters/{id}', [CharacterController::class, 'show'])->name('characters.show');
 Route::post('/characters/{id}/assets', [CharacterController::class, 'storeAsset'])->name('characters.assets.store');
+
+Route::get('/albums', [AlbumController::class, 'index'])->name('albums.index');
+Route::get('/albums/{id}', [AlbumController::class, 'show'])->name('albums.show');
 
 Route::get('/franchises', [FranchiseController::class, 'index'])->name('franchises.index');
 Route::get('/franchises/{name}', [FranchiseController::class, 'show'])->name('franchises.show')
@@ -58,6 +62,8 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::resource('media', \App\Http\Controllers\Admin\MediaCrudController::class)->names('admin.media');
 
     Route::resource('characters', \App\Http\Controllers\Admin\CharacterCrudController::class)->names('admin.characters');
+
+    Route::resource('albums', \App\Http\Controllers\Admin\AlbumCrudController::class)->names('admin.albums');
 
     Route::get('/asset-type-images', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'index'])->name('admin.asset-type-images.index');
     Route::post('/asset-type-images/{type}', [\App\Http\Controllers\Admin\AssetTypeImageController::class, 'upsert'])->name('admin.asset-type-images.upsert')->where('type', '.+');
